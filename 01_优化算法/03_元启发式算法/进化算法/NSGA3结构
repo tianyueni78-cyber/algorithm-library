@@ -1,0 +1,308 @@
+```text
+NSGA-III
+│
+├── 输入
+│   ├── Problem
+│   │   ├── problem_data：问题数据
+│   │   ├── encoding_definition：方案编码规则
+│   │   ├── objective_functions：多个目标函数
+│   │   └── constraints：业务约束
+│   └── NSGA3Config
+│       ├── population_size：种群大小
+│       ├── reference_divisions：参考方向划分数量
+│       ├── crossover_rate：交叉概率
+│       ├── mutation_rate：变异概率
+│       ├── max_generations：最大迭代次数
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── NSGA3Result
+│       ├── pareto_solutions：帕累托现实方案集
+│       ├── pareto_objectives：各方案的多个目标值
+│       ├── pareto_chromosomes：帕累托染色体集合
+│       ├── reference_assignments：方案与参考方向的对应关系
+│       ├── final_population：最终种群
+│       ├── generations：实际迭代次数
+│       └── evaluations：评价次数
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── problem_data
+│   │   ├── encoding_definition
+│   │   ├── objective_functions
+│   │   └── constraints
+│   │
+│   ├── class NSGA3Config
+│   │   ├── population_size
+│   │   ├── reference_divisions
+│   │   ├── crossover_rate
+│   │   ├── mutation_rate
+│   │   ├── max_generations
+│   │   └── random_seed
+│   │
+│   ├── class Individual
+│   │   ├── chromosome
+│   │   ├── decoded_solution
+│   │   ├── objective_values
+│   │   ├── normalized_objectives
+│   │   ├── constraint_violation
+│   │   ├── rank
+│   │   ├── reference_index
+│   │   └── reference_distance
+│   │
+│   ├── class ReferenceDirection
+│   │   ├── vector
+│   │   ├── associated_count
+│   │   └── candidate_indices
+│   │
+│   ├── class Population
+│   │   ├── individuals
+│   │   ├── fronts
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   └── class NSGA3Result
+│       ├── pareto_solutions
+│       ├── pareto_objectives
+│       ├── pareto_chromosomes
+│       ├── reference_assignments
+│       ├── final_population
+│       ├── generations
+│       └── evaluations
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：业务数据、编码规则、多个目标函数和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── encode_solution(solution, problem) -> Chromosome
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：染色体
+│   │
+│   ├── decode_chromosome(chromosome, problem) -> Solution
+│   │   ├── 输入：染色体、Problem
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_objectives(solution, problem) -> Vector
+│   │   ├── 输入：现实方案、Problem中的多个目标函数
+│   │   └── 输出：多个目标值组成的向量
+│   │
+│   ├── calculate_constraint_violation(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：约束违反程度
+│   │
+│   └── repair_chromosome(chromosome, problem) -> Chromosome
+│       ├── 输入：非法染色体、Problem
+│       └── 输出：修复后的染色体
+│
+├── 03_Reference_Direction_Generation
+│   │
+│   └── generate_reference_directions(objective_count, divisions) -> list[ReferenceDirection]
+│       ├── 输入：目标数量、参考方向划分数量
+│       └── 输出：参考方向列表
+│
+├── 04_Population_Initialization
+│   │
+│   ├── create_random_chromosome(problem, rng) -> Chromosome
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机染色体
+│   │
+│   ├── create_individual(chromosome) -> Individual
+│   │   ├── 输入：染色体
+│   │   └── 输出：Individual对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、NSGA3Config
+│       └── 输出：初始Population
+│
+├── 05_Objective_Evaluation
+│   │
+│   ├── evaluate_individual(individual, problem) -> Individual
+│   │   ├── 输入：Individual、Problem
+│   │   └── 输出：包含现实方案、目标值和约束违反程度的Individual
+│   │
+│   └── evaluate_population(population, problem) -> Population
+│       ├── 输入：Population、Problem
+│       └── 输出：完成评价的Population
+│
+├── 06_Nondominated_Sorting
+│   │
+│   ├── constraint_dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual及其约束违反程度
+│   │   └── 输出：个体A是否在约束规则下支配个体B
+│   │
+│   ├── dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual的多个目标值
+│   │   └── 输出：个体A是否支配个体B
+│   │
+│   └── fast_nondominated_sort(population) -> list[list[Individual]]
+│       ├── 输入：完成评价的Population
+│       └── 输出：按等级排列的非支配层列表
+│
+├── 07_Objective_Normalization
+│   │
+│   ├── find_ideal_point(population) -> Vector
+│   │   ├── 输入：完成评价的Population
+│   │   └── 输出：各项目标的理想值
+│   │
+│   ├── find_extreme_points(population, ideal_point) -> list[Individual]
+│   │   ├── 输入：Population、理想点
+│   │   └── 输出：各项目标方向上的极端方案
+│   │
+│   ├── calculate_intercepts(extreme_points, population) -> Vector
+│   │   ├── 输入：极端方案、Population
+│   │   └── 输出：各项目标的归一化截距
+│   │
+│   └── normalize_objectives(population, ideal_point, intercepts) -> Population
+│       ├── 输入：Population、理想点、截距
+│       └── 输出：包含标准化目标值的Population
+│
+├── 08_Reference_Association
+│   │
+│   ├── calculate_reference_distance(individual, direction) -> float
+│   │   ├── 输入：包含标准化目标值的Individual、ReferenceDirection
+│   │   └── 输出：方案到参考方向的距离
+│   │
+│   ├── associate_individual(individual, directions) -> Individual
+│   │   ├── 输入：Individual、参考方向列表
+│   │   └── 输出：包含参考方向编号和距离的Individual
+│   │
+│   └── associate_population(population, directions) -> Population
+│       ├── 输入：Population、参考方向列表
+│       └── 输出：完成参考方向关联的Population
+│
+├── 09_Parent_Selection_And_Reproduction
+│   │
+│   ├── tournament_selection(population, rng) -> Individual
+│   │   ├── 输入：Population、随机数生成器
+│   │   └── 输出：选中的父代Individual
+│   │
+│   ├── select_parent_pairs(population, pair_count, rng) -> list[ParentPair]
+│   │   ├── 输入：Population、父代对数量、随机数生成器
+│   │   └── 输出：父代组合列表
+│   │
+│   ├── crossover(parent_a, parent_b, config, rng) -> tuple[Chromosome, Chromosome]
+│   │   ├── 输入：两个父代、NSGA3Config、随机数生成器
+│   │   └── 输出：两个子代染色体
+│   │
+│   ├── mutate(chromosome, mutation_rate, rng) -> Chromosome
+│   │   ├── 输入：染色体、变异概率、随机数生成器
+│   │   └── 输出：变异后的染色体
+│   │
+│   └── create_offspring(parent_pairs, problem, config, rng) -> Population
+│       ├── 输入：父代组合、Problem、NSGA3Config、随机数生成器
+│       └── 输出：完成交叉、变异和修复的子代Population
+│
+├── 10_Environmental_Selection
+│   │
+│   ├── merge_populations(parents, offspring) -> Population
+│   │   ├── 输入：父代Population、子代Population
+│   │   └── 输出：合并Population
+│   │
+│   ├── fill_complete_fronts(fronts, population_size) -> SelectionState
+│   │   ├── 输入：非支配层、种群大小
+│   │   └── 输出：已保留个体、临界层和剩余位置数量
+│   │
+│   ├── count_reference_members(selected, directions) -> list[ReferenceDirection]
+│   │   ├── 输入：已保留个体、参考方向列表
+│   │   └── 输出：包含已关联个体数量的参考方向列表
+│   │
+│   ├── niche_select(last_front, directions, remaining_slots, rng) -> list[Individual]
+│   │   ├── 输入：临界层、参考方向、剩余位置数量、随机数生成器
+│   │   └── 输出：从临界层选出的代表个体
+│   │
+│   └── build_next_population(selected, niche_individuals) -> Population
+│       ├── 输入：已保留个体、参考方向筛选出的个体
+│       └── 输出：下一代Population
+│
+├── 11_Termination_And_Result
+│   │
+│   ├── check_termination(population, config) -> StopStatus
+│   │   ├── 输入：Population、NSGA3Config
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   ├── extract_pareto_front(population) -> list[Individual]
+│   │   ├── 输入：最终Population
+│   │   └── 输出：第一非支配层
+│   │
+│   └── build_result(pareto_front, population, directions) -> NSGA3Result
+│       ├── 输入：第一非支配层、最终Population、参考方向列表
+│       └── 输出：NSGA3Result
+│
+├── 12_Main_Solver
+│   │
+│   └── run(problem, config) -> NSGA3Result
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：NSGA3Config配置对象
+│       ├── 调用流程
+│       │   ├── generate_reference_directions(objective_count, reference_divisions)
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── while not stopped
+│       │   │   ├── select_parent_pairs(population, pair_count, rng)
+│       │   │   ├── create_offspring(parent_pairs, problem, config, rng)
+│       │   │   ├── evaluate_population(offspring, problem)
+│       │   │   ├── merge_populations(population, offspring)
+│       │   │   ├── fast_nondominated_sort(combined_population)
+│       │   │   ├── fill_complete_fronts(fronts, config.population_size)
+│       │   │   ├── find_ideal_point(combined_population)
+│       │   │   ├── find_extreme_points(combined_population, ideal_point)
+│       │   │   ├── calculate_intercepts(extreme_points, combined_population)
+│       │   │   ├── normalize_objectives(combined_population, ideal_point, intercepts)
+│       │   │   ├── associate_population(combined_population, directions)
+│       │   │   ├── count_reference_members(selected, directions)
+│       │   │   ├── niche_select(last_front, directions, remaining_slots, rng)
+│       │   │   ├── build_next_population(selected, niche_individuals)
+│       │   │   └── check_termination(population, config)
+│       │   ├── extract_pareto_front(population)
+│       │   └── build_result(pareto_front, population, directions)
+│       └── 输出
+│           └── NSGA3Result
+│
+└── 13_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + NSGA3Config
+        ↓
+        generate_reference_directions()
+        ↓
+        initialize_population()
+        ↓
+        evaluate_population()
+        ↓
+        select_parent_pairs()
+        ↓
+        crossover() + mutate() + repair_chromosome()
+        ↓
+        子代Population
+        ↓
+        evaluate_population()
+        ↓
+        merge_populations()
+        ↓
+        fast_nondominated_sort()
+        ↓
+        fill_complete_fronts()
+        ↓
+        normalize_objectives()
+        ↓
+        associate_population()
+        ↓
+        niche_select()
+        ↓
+        build_next_population()
+        ↓
+        新Population
+        ↓ 重复进化
+        extract_pareto_front()
+        ↓
+        build_result()
+        ↓
+        NSGA3Result
+```
