@@ -1,0 +1,242 @@
+```text
+CMA-ES
+│
+├── 输入
+│   ├── Problem
+│   │   ├── initial_mean：初始参数向量
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── CMAESConfig
+│       ├── population_size：每代候选方案数量
+│       ├── parent_size：参与更新的优秀方案数量
+│       ├── initial_step_size：初始搜索步长
+│       ├── max_generations：最大迭代次数
+│       ├── target_fitness：目标评价值
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── CMAESResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好目标值
+│       ├── generations：实际迭代次数
+│       ├── evaluations：目标函数调用次数
+│       ├── final_state：最终搜索状态
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── initial_mean
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class CMAESConfig
+│   │   ├── population_size
+│   │   ├── parent_size
+│   │   ├── initial_step_size
+│   │   ├── max_generations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Candidate
+│   │   ├── parameters
+│   │   ├── normalized_step
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class StrategyState
+│   │   ├── mean
+│   │   ├── step_size
+│   │   ├── covariance_matrix
+│   │   ├── covariance_path
+│   │   ├── step_size_path
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   └── class CMAESResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── generations
+│       ├── evaluations
+│       ├── final_state
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：初始参数、参数边界、业务数据和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(parameters, problem) -> float
+│   │   ├── 输入：候选参数、Problem
+│   │   └── 输出：候选参数的目标值
+│   │
+│   ├── check_feasibility(parameters, problem) -> bool
+│   │   ├── 输入：候选参数、Problem中的边界和约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(parameters, problem) -> Vector
+│       ├── 输入：越界或违反约束的候选参数、Problem
+│       └── 输出：修复后的参数向量
+│
+├── 03_Strategy_Initialization
+│   │
+│   ├── initialize_weights(config) -> Vector
+│   │   ├── 输入：父代数量和种群大小
+│   │   └── 输出：优秀候选方案的组合权重
+│   │
+│   ├── initialize_parameters(problem, config) -> StrategyParameters
+│   │   ├── 输入：Problem、CMAESConfig
+│   │   └── 输出：学习率、权重和有效父代数量
+│   │
+│   └── initialize_state(problem, config) -> StrategyState
+│       ├── 输入：初始均值、初始步长和参数维度
+│       └── 输出：初始StrategyState
+│
+├── 04_Candidate_Sampling
+│   │
+│   ├── decompose_covariance(covariance_matrix) -> Decomposition
+│   │   ├── 输入：协方差矩阵
+│   │   └── 输出：用于生成候选方案的矩阵分解结果
+│   │
+│   ├── sample_normal_vector(dimension, rng) -> Vector
+│   │   ├── 输入：参数维度、随机数生成器
+│   │   └── 输出：标准随机向量
+│   │
+│   ├── transform_step(random_vector, decomposition) -> Vector
+│   │   ├── 输入：标准随机向量、矩阵分解结果
+│   │   └── 输出：按当前搜索方向变换后的步长
+│   │
+│   └── sample_population(state, config, problem) -> list[Candidate]
+│       ├── 输入：StrategyState、CMAESConfig、Problem
+│       └── 输出：一代候选方案列表
+│
+├── 05_Evaluation
+│   │
+│   ├── evaluate_candidate(candidate, problem) -> Candidate
+│   │   ├── 输入：Candidate、Problem
+│   │   └── 输出：包含目标值和可行性结果的Candidate
+│   │
+│   ├── evaluate_population(candidates, problem) -> list[Candidate]
+│   │   ├── 输入：候选方案列表、Problem
+│   │   └── 输出：完成评价的候选方案列表
+│   │
+│   └── rank_candidates(candidates) -> list[Candidate]
+│       ├── 输入：完成评价的候选方案列表
+│       └── 输出：按目标值排列的候选方案列表
+│
+├── 06_Strategy_Update
+│   │
+│   ├── select_parents(candidates, parent_size) -> list[Candidate]
+│   │   ├── 输入：已排序候选方案、父代数量
+│   │   └── 输出：参与状态更新的优秀方案
+│   │
+│   ├── update_mean(parents, weights) -> Vector
+│   │   ├── 输入：优秀方案、组合权重
+│   │   └── 输出：新的搜索中心
+│   │
+│   ├── update_evolution_paths(state, new_mean, parameters) -> Paths
+│   │   ├── 输入：当前状态、新搜索中心、策略参数
+│   │   └── 输出：新的协方差路径和步长路径
+│   │
+│   ├── update_covariance(state, parents, paths, parameters) -> Matrix
+│   │   ├── 输入：当前状态、优秀方案、进化路径、策略参数
+│   │   └── 输出：新的协方差矩阵
+│   │
+│   ├── update_step_size(state, paths, parameters) -> float
+│   │   ├── 输入：当前状态、步长路径、策略参数
+│   │   └── 输出：新的搜索步长
+│   │
+│   └── update_state(state, parents, parameters) -> StrategyState
+│       ├── 输入：当前StrategyState、优秀方案、策略参数
+│       └── 输出：更新后的StrategyState
+│
+├── 07_Termination_And_Result
+│   │
+│   ├── update_best(best_candidate, candidates) -> Candidate
+│   │   ├── 输入：历史最好方案、本代候选方案
+│   │   └── 输出：更新后的最好方案
+│   │
+│   ├── check_termination(state, best_candidate, config) -> StopStatus
+│   │   ├── 输入：StrategyState、最好方案、CMAESConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best_candidate, state, stop_status) -> CMAESResult
+│       ├── 输入：最好方案、最终状态、停止状态
+│       └── 输出：CMAESResult
+│
+├── 08_Main_Solver
+│   │
+│   └── run(problem, config) -> CMAESResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：CMAESConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_weights(config)
+│       │   ├── initialize_parameters(problem, config)
+│       │   ├── initialize_state(problem, config)
+│       │   ├── while not stopped
+│       │   │   ├── decompose_covariance(state.covariance_matrix)
+│       │   │   ├── sample_population(state, config, problem)
+│       │   │   ├── check_feasibility(candidate, problem)
+│       │   │   ├── repair_solution(parameters, problem)
+│       │   │   ├── evaluate_population(candidates, problem)
+│       │   │   ├── rank_candidates(candidates)
+│       │   │   ├── select_parents(candidates, config.parent_size)
+│       │   │   ├── update_mean(parents, weights)
+│       │   │   ├── update_evolution_paths(state, new_mean, parameters)
+│       │   │   ├── update_covariance(state, parents, paths, parameters)
+│       │   │   ├── update_step_size(state, paths, parameters)
+│       │   │   ├── update_state(state, parents, parameters)
+│       │   │   ├── update_best(best_candidate, candidates)
+│       │   │   └── check_termination(state, best_candidate, config)
+│       │   └── build_result(best_candidate, state, stop_status)
+│       └── 输出
+│           └── CMAESResult
+│
+└── 09_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + CMAESConfig
+        ↓
+        initialize_state()
+        ↓
+        StrategyState
+        ↓
+        sample_population()
+        ↓
+        Candidate列表
+        ↓
+        repair_solution()
+        ↓
+        evaluate_population()
+        ↓
+        rank_candidates()
+        ↓
+        select_parents()
+        ↓
+        update_mean()
+        ↓
+        update_evolution_paths()
+        ↓
+        update_covariance()
+        ↓
+        update_step_size()
+        ↓
+        新StrategyState
+        ↓ 重复搜索
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        CMAESResult
+```
