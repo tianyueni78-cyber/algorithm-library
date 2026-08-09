@@ -1,0 +1,271 @@
+```text
+GSA
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── GSAConfig
+│       ├── population_size：个体数量
+│       ├── initial_gravity：初始引力常数
+│       ├── gravity_decay：引力衰减参数
+│       ├── initial_kbest：初始参与吸引的优秀个体数量
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── GSAResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_population：最终种群
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class GSAConfig
+│   │   ├── population_size
+│   │   ├── initial_gravity
+│   │   ├── gravity_decay
+│   │   ├── initial_kbest
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Agent
+│   │   ├── position
+│   │   ├── velocity
+│   │   ├── force
+│   │   ├── acceleration
+│   │   ├── mass
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Population
+│   │   ├── agents
+│   │   ├── gravitational_constant
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class GSAResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_population
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机位置
+│   │
+│   ├── create_initial_velocity(dimension) -> Vector
+│   │   ├── 输入：参数维度
+│   │   └── 输出：初始速度向量
+│   │
+│   ├── create_agent(position, velocity) -> Agent
+│   │   ├── 输入：初始位置、初始速度
+│   │   └── 输出：Agent对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、GSAConfig
+│       └── 输出：初始Population
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_agent(agent, problem) -> Agent
+│   │   ├── 输入：Agent、Problem
+│   │   └── 输出：包含目标值、适应度和可行性的Agent
+│   │
+│   ├── evaluate_population(population, problem) -> Population
+│   │   ├── 输入：Population、Problem
+│   │   └── 输出：完成评价的Population
+│   │
+│   └── find_best(population) -> Agent
+│       ├── 输入：完成评价的Population
+│       └── 输出：当前最好Agent
+│
+├── 05_Mass_Calculation
+│   │
+│   ├── find_best_and_worst_fitness(population) -> FitnessRange
+│   │   ├── 输入：完成评价的Population
+│   │   └── 输出：当前最好和最差适应度
+│   │
+│   ├── calculate_raw_mass(agent, fitness_range) -> float
+│   │   ├── 输入：Agent适应度、当前适应度范围
+│   │   └── 输出：未归一化质量
+│   │
+│   └── normalize_masses(population) -> Population
+│       ├── 输入：包含未归一化质量的Population
+│       └── 输出：包含归一化质量的Population
+│
+├── 06_Gravity_And_Force
+│   │
+│   ├── update_gravitational_constant(iteration, config) -> float
+│   │   ├── 输入：当前迭代次数、GSAConfig
+│   │   └── 输出：当前引力常数
+│   │
+│   ├── select_kbest_agents(population, iteration, config) -> list[Agent]
+│   │   ├── 输入：Population、当前迭代次数、GSAConfig
+│   │   └── 输出：参与产生引力的优秀Agent列表
+│   │
+│   ├── calculate_distance(agent_a, agent_b) -> float
+│   │   ├── 输入：两个Agent的位置
+│   │   └── 输出：两个Agent之间的距离
+│   │
+│   ├── calculate_pairwise_force(source, target, gravity, rng) -> Vector
+│   │   ├── 输入：当前Agent、目标Agent、引力常数、随机数生成器
+│   │   └── 输出：目标Agent产生的引力向量
+│   │
+│   └── calculate_total_force(agent, kbest_agents, gravity, rng) -> Vector
+│       ├── 输入：当前Agent、优秀Agent列表、引力常数、随机数生成器
+│       └── 输出：当前Agent受到的总引力
+│
+├── 07_Movement
+│   │
+│   ├── calculate_acceleration(force, mass) -> Vector
+│   │   ├── 输入：总引力向量、Agent质量
+│   │   └── 输出：加速度向量
+│   │
+│   ├── update_velocity(agent, acceleration, rng) -> Vector
+│   │   ├── 输入：Agent当前速度、加速度、随机数生成器
+│   │   └── 输出：新速度
+│   │
+│   ├── update_position(agent, velocity) -> Vector
+│   │   ├── 输入：Agent当前位置、新速度
+│   │   └── 输出：新位置
+│   │
+│   └── update_population(population, kbest_agents, gravity, problem, rng) -> Population
+│       ├── 输入：Population、优秀Agent、引力常数、Problem、随机数生成器
+│       └── 输出：完成位置更新的新Population
+│
+├── 08_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(position, problem) -> bool
+│   │   ├── 输入：参数位置、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(position, problem) -> Vector
+│   │   ├── 输入：越界参数位置、Problem
+│   │   └── 输出：截断至边界内的参数位置
+│   │
+│   └── prepare_agent(agent, problem) -> Agent
+│       ├── 输入：位置更新后的Agent、Problem
+│       └── 输出：完成边界和约束处理的Agent
+│
+├── 09_Termination_And_Result
+│   │
+│   ├── update_best(best, population) -> Agent
+│   │   ├── 输入：历史最好Agent、当前Population
+│   │   └── 输出：更新后的最好Agent
+│   │
+│   ├── check_termination(population, best, config) -> StopStatus
+│   │   ├── 输入：Population、最好Agent、GSAConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, population, stop_status) -> GSAResult
+│       ├── 输入：最好Agent、最终Population、停止状态
+│       └── 输出：GSAResult
+│
+├── 10_Main_Solver
+│   │
+│   └── run(problem, config) -> GSAResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：GSAConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── find_best(population)
+│       │   ├── while not stopped
+│       │   │   ├── normalize_masses(population)
+│       │   │   ├── update_gravitational_constant(iteration, config)
+│       │   │   ├── select_kbest_agents(population, iteration, config)
+│       │   │   ├── for each agent in population
+│       │   │   │   ├── calculate_total_force(agent, kbest_agents, gravity, rng)
+│       │   │   │   ├── calculate_acceleration(force, agent.mass)
+│       │   │   │   ├── update_velocity(agent, acceleration, rng)
+│       │   │   │   ├── update_position(agent, velocity)
+│       │   │   │   └── prepare_agent(agent, problem)
+│       │   │   ├── evaluate_population(population, problem)
+│       │   │   ├── update_best(best, population)
+│       │   │   └── check_termination(population, best, config)
+│       │   └── build_result(best, population, stop_status)
+│       └── 输出
+│           └── GSAResult
+│
+└── 11_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + GSAConfig
+        ↓
+        initialize_population()
+        ↓
+        evaluate_population()
+        ↓
+        normalize_masses()
+        ↓
+        update_gravitational_constant()
+        ↓
+        select_kbest_agents()
+        ↓
+        calculate_total_force()
+        ↓
+        calculate_acceleration()
+        ↓
+        update_velocity()
+        ↓
+        update_position()
+        ↓
+        prepare_agent()
+        ↓
+        新Population
+        ↓ 重复搜索
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        GSAResult
+```
