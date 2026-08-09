@@ -1,0 +1,276 @@
+```text
+Simulated_Annealing
+│
+├── 输入
+│   ├── Problem
+│   │   └── 问题数据、业务约束、目标信息
+│   └── SAConfig
+│       └── 初始温度、最低温度、降温参数、迭代限制、随机种子
+│
+├── 输出
+│   └── SAResult
+│       ├── best_solution
+│       ├── best_objective
+│       ├── final_temperature
+│       ├── iterations
+│       └── history
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── data
+│   │   └── constraints
+│   │
+│   ├── class Solution
+│   │   ├── representation
+│   │   ├── objective_value
+│   │   └── feasible
+│   │
+│   ├── class Move
+│   │   ├── move_type
+│   │   └── parameters
+│   │
+│   ├── class SAConfig
+│   │   ├── initial_temperature
+│   │   ├── minimum_temperature
+│   │   ├── cooling_rate
+│   │   ├── iterations_per_temperature
+│   │   ├── max_iterations
+│   │   ├── max_no_improvement
+│   │   └── random_seed
+│   │
+│   └── class SAResult
+│       ├── best_solution
+│       ├── best_objective
+│       ├── final_temperature
+│       ├── iterations
+│       └── history
+│
+├── 02_Problem_Interface
+│   │
+│   ├── load_problem(source) -> Problem
+│   │   ├── 输入：文件、数组或业务数据
+│   │   └── 输出：Problem
+│   │
+│   ├── copy_solution(solution) -> Solution
+│   │   ├── 输入：Solution
+│   │   └── 输出：Solution副本
+│   │
+│   ├── is_feasible(solution, problem) -> bool
+│   │   ├── 输入：Solution、Problem
+│   │   └── 输出：是否满足业务约束
+│   │
+│   └── repair(solution, problem) -> Solution
+│       ├── 输入：不可行Solution、Problem
+│       └── 输出：修复后的Solution
+│
+├── 03_Initial_Solution
+│   │
+│   ├── build_random_solution(problem, rng) -> Solution
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机初始解
+│   │
+│   ├── build_greedy_solution(problem) -> Solution
+│   │   ├── 输入：Problem
+│   │   └── 输出：贪心初始解
+│   │
+│   └── build_initial_solution(problem, method, rng) -> Solution
+│       ├── 输入：Problem、初始化方法、随机数生成器
+│       └── 输出：初始Solution
+│
+├── 04_Neighborhood
+│   │
+│   ├── generate_move(solution, problem, rng) -> Move
+│   │   ├── 输入：当前Solution、Problem、随机数生成器
+│   │   └── 输出：随机邻域操作
+│   │
+│   ├── apply_move(solution, move) -> Solution
+│   │   ├── 输入：当前Solution、Move
+│   │   └── 输出：执行操作后的Solution
+│   │
+│   └── generate_neighbor(solution, problem, rng) -> tuple[Move, Solution]
+│       ├── 输入：当前Solution、Problem、随机数生成器
+│       ├── 调用流程
+│       │   ├── generate_move()
+│       │   ├── apply_move()
+│       │   ├── is_feasible()
+│       │   └── repair()
+│       └── 输出：Move、邻居Solution
+│
+├── 05_Evaluation
+│   │
+│   ├── calculate_objective(solution, problem) -> float
+│   │   ├── 输入：Solution、Problem
+│   │   └── 输出：原始目标值
+│   │
+│   ├── calculate_penalty(solution, problem) -> float
+│   │   ├── 输入：Solution、Problem
+│   │   └── 输出：约束违反惩罚值
+│   │
+│   └── evaluate(solution, problem) -> float
+│       ├── 输入：Solution、Problem
+│       ├── 调用流程
+│       │   ├── calculate_objective()
+│       │   └── calculate_penalty()
+│       └── 输出：最终评价值
+│
+├── 06_Acceptance
+│   │
+│   ├── calculate_difference(
+│   │       current_objective,
+│   │       candidate_objective
+│   │   ) -> float
+│   │   ├── 输入：当前目标值、候选目标值
+│   │   └── 输出：目标值变化量
+│   │
+│   ├── acceptance_probability(
+│   │       difference,
+│   │       temperature
+│   │   ) -> float
+│   │   ├── 输入：目标值变化量、当前温度
+│   │   └── 输出：候选解接受概率
+│   │
+│   └── should_accept(
+│           current_objective,
+│           candidate_objective,
+│           temperature,
+│           rng
+│       ) -> bool
+│       ├── 输入
+│       │   ├── 当前目标值
+│       │   ├── 候选目标值
+│       │   ├── 当前温度
+│       │   └── 随机数生成器
+│       ├── 调用流程
+│       │   ├── calculate_difference()
+│       │   └── acceptance_probability()
+│       └── 输出：是否接受候选解
+│
+├── 07_Cooling
+│   │
+│   ├── initialize_temperature(config) -> float
+│   │   ├── 输入：SAConfig
+│   │   └── 输出：初始温度
+│   │
+│   ├── update_temperature(
+│   │       temperature,
+│   │       config
+│   │   ) -> float
+│   │   ├── 输入：当前温度、SAConfig
+│   │   └── 输出：更新后的温度
+│   │
+│   └── temperature_finished(
+│           temperature,
+│           config
+│       ) -> bool
+│       ├── 输入：当前温度、SAConfig
+│       └── 输出：温度是否达到停止范围
+│
+├── 08_Search_State
+│   │
+│   ├── update_current(
+│   │       current_solution,
+│   │       candidate_solution,
+│   │       accepted
+│   │   ) -> Solution
+│   │   ├── 输入：当前解、候选解、接受结果
+│   │   └── 输出：下一轮当前解
+│   │
+│   ├── update_best(
+│   │       current_solution,
+│   │       best_solution
+│   │   ) -> Solution
+│   │   ├── 输入：当前解、历史最好解
+│   │   └── 输出：更新后的历史最好解
+│   │
+│   └── record_history(
+│           history,
+│           iteration,
+│           temperature,
+│           current_solution,
+│           best_solution
+│       ) -> None
+│       ├── 输入：历史记录、迭代次数、温度、当前解、最好解
+│       └── 输出：更新后的搜索记录
+│
+├── 09_Stop_Condition
+│   │
+│   └── should_stop(
+│           iteration,
+│           no_improvement_count,
+│           temperature,
+│           config
+│       ) -> bool
+│       ├── 输入
+│       │   ├── 当前迭代次数
+│       │   ├── 连续未改进次数
+│       │   ├── 当前温度
+│       │   └── SAConfig
+│       ├── 调用流程
+│       │   └── temperature_finished()
+│       └── 输出：是否停止搜索
+│
+├── 10_Simulated_Annealing_Solver
+│   │
+│   ├── class SimulatedAnnealingSolver
+│   │   ├── problem
+│   │   ├── config
+│   │   ├── rng
+│   │   ├── temperature
+│   │   ├── current_solution
+│   │   ├── best_solution
+│   │   ├── iteration
+│   │   ├── no_improvement_count
+│   │   └── history
+│   │
+│   └── run(problem, config) -> SAResult
+│       │
+│       ├── 输入
+│       │   ├── Problem
+│       │   └── SAConfig
+│       │
+│       ├── 初始化流程
+│       │   ├── build_initial_solution()
+│       │   ├── evaluate()
+│       │   ├── copy_solution()
+│       │   └── initialize_temperature()
+│       │
+│       ├── 搜索循环
+│       │   ├── generate_neighbor()
+│       │   ├── evaluate()
+│       │   ├── should_accept()
+│       │   ├── update_current()
+│       │   ├── update_best()
+│       │   ├── record_history()
+│       │   ├── update_temperature()
+│       │   └── should_stop()
+│       │
+│       └── 输出
+│           └── SAResult
+│
+└── 11_Data_Flow
+    │
+    └── Problem + SAConfig
+        ↓
+        build_initial_solution()
+        ↓
+        current_solution
+        ↓
+        generate_neighbor()
+        ↓
+        candidate_solution
+        ↓
+        evaluate()
+        ↓
+        should_accept()
+        ↓
+        update_current()
+        ↓
+        update_best()
+        ↓
+        update_temperature()
+        ↓
+        should_stop()
+        ↓
+        SAResult
+```
