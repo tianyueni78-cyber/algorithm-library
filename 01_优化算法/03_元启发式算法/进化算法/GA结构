@@ -1,0 +1,257 @@
+```text
+GA
+│
+├── 输入
+│   ├── Problem
+│   │   ├── problem_data：问题数据
+│   │   ├── encoding_definition：染色体编码规则
+│   │   ├── objective_function：目标评价函数
+│   │   └── constraints：业务约束
+│   └── GAConfig
+│       ├── population_size：种群大小
+│       ├── crossover_rate：交叉概率
+│       ├── mutation_rate：变异概率
+│       ├── elitism_count：直接保留的优秀个体数量
+│       ├── max_generations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── GAResult
+│       ├── best_solution：最好现实方案
+│       ├── best_chromosome：最好染色体
+│       ├── best_fitness：最好适应度
+│       ├── final_population：最终种群
+│       ├── generations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── problem_data
+│   │   ├── encoding_definition
+│   │   ├── objective_function
+│   │   └── constraints
+│   │
+│   ├── class GAConfig
+│   │   ├── population_size
+│   │   ├── crossover_rate
+│   │   ├── mutation_rate
+│   │   ├── elitism_count
+│   │   ├── max_generations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Individual
+│   │   ├── chromosome
+│   │   ├── decoded_solution
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Population
+│   │   ├── individuals
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   └── class GAResult
+│       ├── best_solution
+│       ├── best_chromosome
+│       ├── best_fitness
+│       ├── final_population
+│       ├── generations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：业务数据、编码规则、目标函数和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── encode_solution(solution, problem) -> Chromosome
+│   │   ├── 输入：现实方案、Problem中的编码规则
+│   │   └── 输出：染色体
+│   │
+│   ├── decode_chromosome(chromosome, problem) -> Solution
+│   │   ├── 输入：染色体、Problem中的编码规则
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_objective(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(solution, problem) -> bool
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：方案是否可行
+│   │
+│   └── repair_chromosome(chromosome, problem) -> Chromosome
+│       ├── 输入：非法染色体、Problem
+│       └── 输出：修复后的染色体
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_chromosome(problem, rng) -> Chromosome
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机染色体
+│   │
+│   ├── create_individual(chromosome) -> Individual
+│   │   ├── 输入：染色体
+│   │   └── 输出：Individual对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、GAConfig
+│       └── 输出：初始Population
+│
+├── 04_Fitness_Evaluation
+│   │
+│   ├── calculate_penalty(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：约束违反惩罚值
+│   │
+│   ├── convert_objective_to_fitness(objective_value, penalty) -> float
+│   │   ├── 输入：目标值、惩罚值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_individual(individual, problem) -> Individual
+│   │   ├── 输入：Individual、Problem
+│   │   └── 输出：包含方案、目标值、适应度和可行性的Individual
+│   │
+│   ├── evaluate_population(population, problem) -> Population
+│   │   ├── 输入：Population、Problem
+│   │   └── 输出：完成评价的Population
+│   │
+│   └── find_best(population) -> Individual
+│       ├── 输入：完成评价的Population
+│       └── 输出：当前最好Individual
+│
+├── 05_Parent_Selection
+│   │
+│   ├── tournament_selection(population, tournament_size, rng) -> Individual
+│   │   ├── 输入：Population、竞赛规模、随机数生成器
+│   │   └── 输出：选中的父代Individual
+│   │
+│   └── select_parent_pairs(population, pair_count, rng) -> list[ParentPair]
+│       ├── 输入：Population、父代对数量、随机数生成器
+│       └── 输出：父代组合列表
+│
+├── 06_Crossover
+│   │
+│   ├── crossover(parent_a, parent_b, config, rng) -> tuple[Chromosome, Chromosome]
+│   │   ├── 输入：两个父代、GAConfig、随机数生成器
+│   │   └── 输出：两个子代染色体
+│   │
+│   └── create_offspring(parent_pairs, config, rng) -> list[Individual]
+│       ├── 输入：父代组合列表、GAConfig、随机数生成器
+│       └── 输出：交叉产生的子代列表
+│
+├── 07_Mutation
+│   │
+│   ├── mutate(chromosome, mutation_rate, rng) -> Chromosome
+│   │   ├── 输入：染色体、变异概率、随机数生成器
+│   │   └── 输出：变异后的染色体
+│   │
+│   └── mutate_offspring(offspring, config, rng) -> list[Individual]
+│       ├── 输入：子代列表、GAConfig、随机数生成器
+│       └── 输出：完成变异的子代列表
+│
+├── 08_Constraint_Handling
+│   │
+│   ├── validate_offspring(offspring, problem) -> list[bool]
+│   │   ├── 输入：子代列表、Problem
+│   │   └── 输出：每个子代的合法性结果
+│   │
+│   └── repair_offspring(offspring, problem) -> list[Individual]
+│       ├── 输入：包含非法染色体的子代列表、Problem
+│       └── 输出：完成修复的子代列表
+│
+├── 09_Survivor_Selection
+│   │
+│   ├── select_elites(population, elitism_count) -> list[Individual]
+│   │   ├── 输入：当前Population、精英数量
+│   │   └── 输出：直接保留的优秀个体
+│   │
+│   └── build_next_population(elites, offspring, population_size) -> Population
+│       ├── 输入：精英个体、已评价子代、种群大小
+│       └── 输出：下一代Population
+│
+├── 10_Termination_And_Result
+│   │
+│   ├── update_best(best, population) -> Individual
+│   │   ├── 输入：历史最好个体、当前Population
+│   │   └── 输出：更新后的最好个体
+│   │
+│   ├── check_termination(population, best, config) -> StopStatus
+│   │   ├── 输入：Population、最好个体、GAConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, population, stop_status) -> GAResult
+│       ├── 输入：最好个体、最终Population、停止状态
+│       └── 输出：GAResult
+│
+├── 11_Main_Solver
+│   │
+│   └── run(problem, config) -> GAResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：GAConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── find_best(population)
+│       │   ├── while not stopped
+│       │   │   ├── select_elites(population, config.elitism_count)
+│       │   │   ├── select_parent_pairs(population, pair_count, rng)
+│       │   │   ├── create_offspring(parent_pairs, config, rng)
+│       │   │   ├── mutate_offspring(offspring, config, rng)
+│       │   │   ├── validate_offspring(offspring, problem)
+│       │   │   ├── repair_offspring(offspring, problem)
+│       │   │   ├── evaluate_population(offspring, problem)
+│       │   │   ├── build_next_population(elites, offspring, config.population_size)
+│       │   │   ├── update_best(best, population)
+│       │   │   └── check_termination(population, best, config)
+│       │   └── build_result(best, population, stop_status)
+│       └── 输出
+│           └── GAResult
+│
+└── 12_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + GAConfig
+        ↓
+        initialize_population()
+        ↓
+        Population
+        ↓
+        decode_chromosome()
+        ↓
+        evaluate_objective()
+        ↓
+        evaluate_population()
+        ↓
+        select_parent_pairs()
+        ↓
+        crossover()
+        ↓
+        mutate()
+        ↓
+        repair_offspring()
+        ↓
+        evaluate_population()
+        ↓
+        build_next_population()
+        ↓
+        新Population
+        ↓ 重复进化
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        GAResult
+```
