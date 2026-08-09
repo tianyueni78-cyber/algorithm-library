@@ -1,0 +1,244 @@
+```text
+WOA
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── WOAConfig
+│       ├── population_size：鲸鱼数量
+│       ├── initial_control：初始搜索控制参数
+│       ├── spiral_constant：螺旋形状参数
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── WOAResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_population：最终鲸鱼种群
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class WOAConfig
+│   │   ├── population_size
+│   │   ├── initial_control
+│   │   ├── spiral_constant
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Whale
+│   │   ├── position
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Population
+│   │   ├── whales
+│   │   ├── best_whale
+│   │   ├── control_parameter
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class WOAResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_population
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机位置
+│   │
+│   ├── create_whale(position) -> Whale
+│   │   ├── 输入：参数位置
+│   │   └── 输出：Whale对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、WOAConfig
+│       └── 输出：初始Population
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_whale(whale, problem) -> Whale
+│   │   ├── 输入：Whale、Problem
+│   │   └── 输出：包含目标值、适应度和可行性的Whale
+│   │
+│   ├── evaluate_population(population, problem) -> Population
+│   │   ├── 输入：Population、Problem
+│   │   └── 输出：完成评价的Population
+│   │
+│   └── find_best_whale(population) -> Whale
+│       ├── 输入：完成评价的Population
+│       └── 输出：当前最好Whale
+│
+├── 05_Control_And_Mode_Selection
+│   │
+│   ├── update_control_parameter(iteration, config) -> float
+│   │   ├── 输入：当前迭代次数、WOAConfig
+│   │   └── 输出：当前搜索控制参数
+│   │
+│   ├── calculate_search_coefficients(control, rng) -> SearchCoefficients
+│   │   ├── 输入：搜索控制参数、随机数生成器
+│   │   └── 输出：位置更新所需的搜索系数
+│   │
+│   └── select_search_mode(coefficients, rng) -> SearchMode
+│       ├── 输入：搜索系数、随机数生成器
+│       └── 输出：靠近最好、螺旋搜索或随机探索模式
+│
+├── 06_Position_Update
+│   │
+│   ├── select_random_whale(population, current_index, rng) -> Whale
+│   │   ├── 输入：Population、当前Whale位置、随机数生成器
+│   │   └── 输出：随机参考Whale
+│   │
+│   ├── encircle_best(whale, best_whale, coefficients) -> Vector
+│   │   ├── 输入：当前Whale、最好Whale、搜索系数
+│   │   └── 输出：靠近最好Whale后的新位置
+│   │
+│   ├── spiral_move(whale, best_whale, spiral_constant, rng) -> Vector
+│   │   ├── 输入：当前Whale、最好Whale、螺旋参数、随机数生成器
+│   │   └── 输出：螺旋移动后的新位置
+│   │
+│   ├── random_search(whale, random_whale, coefficients) -> Vector
+│   │   ├── 输入：当前Whale、随机参考Whale、搜索系数
+│   │   └── 输出：随机探索后的新位置
+│   │
+│   ├── update_whale_position(whale, population, mode, coefficients, config, rng) -> Whale
+│   │   ├── 输入：当前Whale、Population、搜索模式、搜索系数、WOAConfig、随机数生成器
+│   │   └── 输出：完成位置更新的Whale
+│   │
+│   └── update_population_positions(population, mode_data, config, rng) -> Population
+│       ├── 输入：Population、各Whale的搜索模式数据、WOAConfig、随机数生成器
+│       └── 输出：完成位置更新的新Population
+│
+├── 07_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(position, problem) -> bool
+│   │   ├── 输入：参数位置、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(position, problem) -> Vector
+│   │   ├── 输入：越界参数位置、Problem
+│   │   └── 输出：截断至边界内的参数位置
+│   │
+│   └── prepare_whale(whale, problem) -> Whale
+│       ├── 输入：位置更新后的Whale、Problem
+│       └── 输出：完成边界和约束处理的Whale
+│
+├── 08_Termination_And_Result
+│   │
+│   ├── update_global_best(best, population) -> Whale
+│   │   ├── 输入：历史最好Whale、当前Population
+│   │   └── 输出：更新后的最好Whale
+│   │
+│   ├── check_termination(population, best, config) -> StopStatus
+│   │   ├── 输入：Population、最好Whale、WOAConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, population, stop_status) -> WOAResult
+│       ├── 输入：最好Whale、最终Population、停止状态
+│       └── 输出：WOAResult
+│
+├── 09_Main_Solver
+│   │
+│   └── run(problem, config) -> WOAResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：WOAConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── find_best_whale(population)
+│       │   ├── while not stopped
+│       │   │   ├── update_control_parameter(iteration, config)
+│       │   │   ├── for each whale in population
+│       │   │   │   ├── calculate_search_coefficients(control, rng)
+│       │   │   │   ├── select_search_mode(coefficients, rng)
+│       │   │   │   ├── encircle_best() / spiral_move() / random_search()
+│       │   │   │   └── prepare_whale(whale, problem)
+│       │   │   ├── update_population_positions(population, mode_data, config, rng)
+│       │   │   ├── evaluate_population(population, problem)
+│       │   │   ├── update_global_best(best, population)
+│       │   │   └── check_termination(population, best, config)
+│       │   └── build_result(best, population, stop_status)
+│       └── 输出
+│           └── WOAResult
+│
+└── 10_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + WOAConfig
+        ↓
+        initialize_population()
+        ↓
+        evaluate_population()
+        ↓
+        find_best_whale()
+        ↓
+        update_control_parameter()
+        ↓
+        calculate_search_coefficients()
+        ↓
+        select_search_mode()
+        ↓
+        encircle_best() / spiral_move() / random_search()
+        ↓
+        prepare_whale()
+        ↓
+        新Population
+        ↓
+        evaluate_population()
+        ↓ 重复搜索
+        update_global_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        WOAResult
+```
