@@ -1,0 +1,240 @@
+```text
+DE
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── DEConfig
+│       ├── population_size：种群大小
+│       ├── mutation_factor：差分缩放因子F
+│       ├── crossover_rate：交叉概率CR
+│       ├── mutation_strategy：变异策略
+│       ├── max_generations：最大迭代次数
+│       ├── target_fitness：目标评价值
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── DEResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好目标值
+│       ├── final_population：最终种群
+│       ├── generations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class DEConfig
+│   │   ├── population_size
+│   │   ├── mutation_factor
+│   │   ├── crossover_rate
+│   │   ├── mutation_strategy
+│   │   ├── max_generations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Individual
+│   │   ├── vector
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Population
+│   │   ├── individuals
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   └── class DEResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── final_population
+│       ├── generations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(vector, problem) -> float
+│   │   ├── 输入：候选参数向量、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(vector, problem) -> bool
+│   │   ├── 输入：候选参数向量、Problem中的约束
+│   │   └── 输出：候选参数是否可行
+│   │
+│   └── repair_solution(vector, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数向量、Problem
+│       └── 输出：修复后的参数向量
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_vector(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机参数向量
+│   │
+│   ├── create_individual(vector) -> Individual
+│   │   ├── 输入：参数向量
+│   │   └── 输出：Individual对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、DEConfig
+│       └── 输出：初始Population
+│
+├── 04_Evaluation
+│   │
+│   ├── evaluate_individual(individual, problem) -> Individual
+│   │   ├── 输入：Individual、Problem
+│   │   └── 输出：包含目标值和可行性结果的Individual
+│   │
+│   ├── evaluate_population(population, problem) -> Population
+│   │   ├── 输入：Population、Problem
+│   │   └── 输出：完成评价的Population
+│   │
+│   └── find_best(population) -> Individual
+│       ├── 输入：完成评价的Population
+│       └── 输出：当前最好Individual
+│
+├── 05_Differential_Mutation
+│   │
+│   ├── select_distinct_indices(population, target_index, count, rng) -> list[int]
+│   │   ├── 输入：Population、目标个体位置、所需个体数量、随机数生成器
+│   │   └── 输出：互不重复的个体位置列表
+│   │
+│   ├── mutate_rand_1(population, indices, factor) -> Vector
+│   │   ├── 输入：Population、三个个体位置、缩放因子F
+│   │   └── 输出：变异向量
+│   │
+│   ├── mutate_best_1(population, best, indices, factor) -> Vector
+│   │   ├── 输入：Population、最好个体、两个个体位置、缩放因子F
+│   │   └── 输出：变异向量
+│   │
+│   └── create_mutant(population, target_index, best, config, rng) -> Vector
+│       ├── 输入：Population、目标个体位置、最好个体、DEConfig、随机数生成器
+│       └── 输出：按指定策略生成的变异向量
+│
+├── 06_Crossover
+│   │
+│   ├── binomial_crossover(target, mutant, crossover_rate, rng) -> Vector
+│   │   ├── 输入：目标向量、变异向量、交叉概率CR、随机数生成器
+│   │   └── 输出：试验向量
+│   │
+│   └── create_trial(target, mutant, config, rng) -> Individual
+│       ├── 输入：目标个体、变异向量、DEConfig、随机数生成器
+│       └── 输出：试验Individual
+│
+├── 07_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(vector, problem) -> bool
+│   │   ├── 输入：参数向量、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(vector, problem) -> Vector
+│   │   ├── 输入：越界参数向量、Problem
+│   │   └── 输出：截断至边界内的参数向量
+│   │
+│   └── prepare_trial(trial, problem) -> Individual
+│       ├── 输入：试验Individual、Problem
+│       └── 输出：完成边界和约束处理的Individual
+│
+├── 08_Greedy_Selection
+│   │
+│   ├── compare_individuals(target, trial) -> Individual
+│   │   ├── 输入：原目标个体、试验个体
+│   │   └── 输出：两者中更好的Individual
+│   │
+│   └── select_next_population(current, trials) -> Population
+│       ├── 输入：当前Population、试验个体列表
+│       └── 输出：下一代Population
+│
+├── 09_Termination_And_Result
+│   │
+│   ├── update_best(best, population) -> Individual
+│   │   ├── 输入：历史最好个体、当前Population
+│   │   └── 输出：更新后的最好个体
+│   │
+│   ├── check_termination(population, best, config) -> StopStatus
+│   │   ├── 输入：Population、最好个体、DEConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, population, stop_status) -> DEResult
+│       ├── 输入：最好个体、最终Population、停止状态
+│       └── 输出：DEResult
+│
+├── 10_Main_Solver
+│   │
+│   └── run(problem, config) -> DEResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：DEConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── find_best(population)
+│       │   ├── while not stopped
+│       │   │   ├── for each target in population
+│       │   │   │   ├── select_distinct_indices(population, target_index, count, rng)
+│       │   │   │   ├── create_mutant(population, target_index, best, config, rng)
+│       │   │   │   ├── create_trial(target, mutant, config, rng)
+│       │   │   │   ├── prepare_trial(trial, problem)
+│       │   │   │   └── evaluate_individual(trial, problem)
+│       │   │   ├── select_next_population(population, trials)
+│       │   │   ├── update_best(best, population)
+│       │   │   └── check_termination(population, best, config)
+│       │   └── build_result(best, population, stop_status)
+│       └── 输出
+│           └── DEResult
+│
+└── 11_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + DEConfig
+        ↓
+        initialize_population()
+        ↓
+        Population
+        ↓
+        evaluate_population()
+        ↓
+        find_best()
+        ↓
+        create_mutant()
+        ↓
+        变异向量
+        ↓
+        create_trial()
+        ↓
+        试验个体
+        ↓
+        prepare_trial()
+        ↓
+        evaluate_individual()
+        ↓
+        compare_individuals()
+        ↓
+        select_next_population()
+        ↓
+        新Population
+        ↓ 重复搜索
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        DEResult
+```
