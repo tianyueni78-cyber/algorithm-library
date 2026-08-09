@@ -1,0 +1,254 @@
+```text
+PSO
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── PSOConfig
+│       ├── swarm_size：粒子数量
+│       ├── inertia_weight：惯性权重
+│       ├── cognitive_weight：个体学习权重
+│       ├── social_weight：群体学习权重
+│       ├── velocity_limits：速度范围
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── PSOResult
+│       ├── best_solution：群体最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_swarm：最终粒子群
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class PSOConfig
+│   │   ├── swarm_size
+│   │   ├── inertia_weight
+│   │   ├── cognitive_weight
+│   │   ├── social_weight
+│   │   ├── velocity_limits
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Particle
+│   │   ├── position
+│   │   ├── velocity
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   ├── personal_best_position
+│   │   ├── personal_best_fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Swarm
+│   │   ├── particles
+│   │   ├── global_best_position
+│   │   ├── global_best_fitness
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class PSOResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_swarm
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Swarm_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机位置
+│   │
+│   ├── create_random_velocity(velocity_limits, rng) -> Vector
+│   │   ├── 输入：速度范围、随机数生成器
+│   │   └── 输出：随机初始速度
+│   │
+│   ├── create_particle(position, velocity) -> Particle
+│   │   ├── 输入：初始位置、初始速度
+│   │   └── 输出：Particle对象
+│   │
+│   └── initialize_swarm(problem, config) -> Swarm
+│       ├── 输入：Problem、PSOConfig
+│       └── 输出：初始Swarm
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_particle(particle, problem) -> Particle
+│   │   ├── 输入：Particle、Problem
+│   │   └── 输出：包含目标值、适应度和可行性的Particle
+│   │
+│   └── evaluate_swarm(swarm, problem) -> Swarm
+│       ├── 输入：Swarm、Problem
+│       └── 输出：完成评价的Swarm
+│
+├── 05_Best_Update
+│   │
+│   ├── update_personal_best(particle) -> Particle
+│   │   ├── 输入：完成当前位置评价的Particle
+│   │   └── 输出：更新个体最好记录后的Particle
+│   │
+│   ├── find_global_best(swarm) -> Particle
+│   │   ├── 输入：包含个体最好记录的Swarm
+│   │   └── 输出：群体历史最好Particle
+│   │
+│   └── update_global_best(swarm) -> Swarm
+│       ├── 输入：包含最新个体最好记录的Swarm
+│       └── 输出：更新群体最好位置和适应度后的Swarm
+│
+├── 06_Velocity_Update
+│   │
+│   ├── calculate_inertia_component(particle, config) -> Vector
+│   │   ├── 输入：Particle当前速度、惯性权重
+│   │   └── 输出：惯性速度分量
+│   │
+│   ├── calculate_cognitive_component(particle, config, rng) -> Vector
+│   │   ├── 输入：当前位置、个体最好位置、个体学习权重、随机数生成器
+│   │   └── 输出：个体经验速度分量
+│   │
+│   ├── calculate_social_component(particle, swarm, config, rng) -> Vector
+│   │   ├── 输入：当前位置、群体最好位置、群体学习权重、随机数生成器
+│   │   └── 输出：群体经验速度分量
+│   │
+│   ├── limit_velocity(velocity, velocity_limits) -> Vector
+│   │   ├── 输入：新速度、速度范围
+│   │   └── 输出：限制后的速度
+│   │
+│   └── update_velocity(particle, swarm, config, rng) -> Vector
+│       ├── 输入：Particle、Swarm、PSOConfig、随机数生成器
+│       └── 输出：粒子新速度
+│
+├── 07_Position_Update
+│   │
+│   ├── update_position(particle, new_velocity) -> Vector
+│   │   ├── 输入：Particle当前位置、新速度
+│   │   └── 输出：粒子新位置
+│   │
+│   └── update_particle(particle, swarm, problem, config, rng) -> Particle
+│       ├── 输入：Particle、Swarm、Problem、PSOConfig、随机数生成器
+│       └── 输出：完成速度和位置更新的Particle
+│
+├── 08_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(position, problem) -> bool
+│   │   ├── 输入：参数位置、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(position, problem) -> Vector
+│   │   ├── 输入：越界参数位置、Problem
+│   │   └── 输出：截断至边界内的参数位置
+│   │
+│   └── prepare_particle(particle, problem) -> Particle
+│       ├── 输入：位置更新后的Particle、Problem
+│       └── 输出：完成边界和约束处理的Particle
+│
+├── 09_Termination_And_Result
+│   │
+│   ├── check_termination(swarm, config) -> StopStatus
+│   │   ├── 输入：Swarm、PSOConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(swarm, stop_status) -> PSOResult
+│       ├── 输入：最终Swarm、停止状态
+│       └── 输出：PSOResult
+│
+├── 10_Main_Solver
+│   │
+│   └── run(problem, config) -> PSOResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：PSOConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_swarm(problem, config)
+│       │   ├── evaluate_swarm(swarm, problem)
+│       │   ├── update_personal_best(particle)
+│       │   ├── update_global_best(swarm)
+│       │   ├── while not stopped
+│       │   │   ├── for each particle in swarm
+│       │   │   │   ├── calculate_inertia_component(particle, config)
+│       │   │   │   ├── calculate_cognitive_component(particle, config, rng)
+│       │   │   │   ├── calculate_social_component(particle, swarm, config, rng)
+│       │   │   │   ├── update_velocity(particle, swarm, config, rng)
+│       │   │   │   ├── limit_velocity(velocity, config.velocity_limits)
+│       │   │   │   ├── update_position(particle, velocity)
+│       │   │   │   └── prepare_particle(particle, problem)
+│       │   │   ├── evaluate_swarm(swarm, problem)
+│       │   │   ├── update_personal_best(particle)
+│       │   │   ├── update_global_best(swarm)
+│       │   │   └── check_termination(swarm, config)
+│       │   └── build_result(swarm, stop_status)
+│       └── 输出
+│           └── PSOResult
+│
+└── 11_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + PSOConfig
+        ↓
+        initialize_swarm()
+        ↓
+        evaluate_swarm()
+        ↓
+        update_personal_best()
+        ↓
+        update_global_best()
+        ↓
+        Swarm
+        ↓
+        update_velocity()
+        ↓
+        update_position()
+        ↓
+        prepare_particle()
+        ↓
+        evaluate_swarm()
+        ↓
+        更新后的个体最好与群体最好
+        ↓ 重复搜索
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        PSOResult
+```
