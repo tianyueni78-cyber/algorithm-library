@@ -1,0 +1,240 @@
+```text
+FA
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── FAConfig
+│       ├── population_size：萤火虫数量
+│       ├── initial_attractiveness：初始吸引力
+│       ├── absorption_coefficient：吸引力衰减系数
+│       ├── randomization_strength：随机移动强度
+│       ├── randomization_decay：随机强度衰减率
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── FAResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_population：最终萤火虫种群
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class FAConfig
+│   │   ├── population_size
+│   │   ├── initial_attractiveness
+│   │   ├── absorption_coefficient
+│   │   ├── randomization_strength
+│   │   ├── randomization_decay
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Firefly
+│   │   ├── position
+│   │   ├── objective_value
+│   │   ├── brightness
+│   │   └── is_feasible
+│   │
+│   ├── class Population
+│   │   ├── fireflies
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class FAResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_population
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机参数位置
+│   │
+│   ├── create_firefly(position) -> Firefly
+│   │   ├── 输入：参数位置
+│   │   └── 输出：Firefly对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、FAConfig
+│       └── 输出：初始Population
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_brightness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：亮度值
+│   │
+│   ├── evaluate_firefly(firefly, problem) -> Firefly
+│   │   ├── 输入：Firefly、Problem
+│   │   └── 输出：包含目标值、亮度和可行性的Firefly
+│   │
+│   ├── evaluate_population(population, problem) -> Population
+│   │   ├── 输入：Population、Problem
+│   │   └── 输出：完成评价的Population
+│   │
+│   └── find_brightest(population) -> Firefly
+│       ├── 输入：完成评价的Population
+│       └── 输出：当前最亮的Firefly
+│
+├── 05_Attraction_Calculation
+│   │
+│   ├── calculate_distance(source, target) -> float
+│   │   ├── 输入：两只Firefly的位置
+│   │   └── 输出：两者之间的距离
+│   │
+│   └── calculate_attractiveness(distance, config) -> float
+│       ├── 输入：距离、初始吸引力、衰减系数
+│       └── 输出：目标Firefly对当前Firefly的吸引力
+│
+├── 06_Movement
+│   │
+│   ├── create_random_step(dimension, strength, rng) -> Vector
+│   │   ├── 输入：参数维度、随机移动强度、随机数生成器
+│   │   └── 输出：随机移动向量
+│   │
+│   ├── move_toward_brighter(source, target, attractiveness, random_step) -> Vector
+│   │   ├── 输入：较暗Firefly、较亮Firefly、吸引力、随机移动向量
+│   │   └── 输出：移动后的参数位置
+│   │
+│   ├── move_firefly(source, population, problem, config, rng) -> Firefly
+│   │   ├── 输入：当前Firefly、Population、Problem、FAConfig、随机数生成器
+│   │   └── 输出：完成移动和评价的Firefly
+│   │
+│   ├── move_population(population, problem, config, rng) -> Population
+│   │   ├── 输入：Population、Problem、FAConfig、随机数生成器
+│   │   └── 输出：完成移动的新Population
+│   │
+│   └── update_randomization_strength(current_strength, decay) -> float
+│       ├── 输入：当前随机移动强度、衰减率
+│       └── 输出：下一轮随机移动强度
+│
+├── 07_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(position, problem) -> bool
+│   │   ├── 输入：参数位置、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(position, problem) -> Vector
+│   │   ├── 输入：越界参数位置、Problem
+│   │   └── 输出：截断至边界内的参数位置
+│   │
+│   └── prepare_position(position, problem) -> Vector
+│       ├── 输入：移动后的参数位置、Problem
+│       └── 输出：完成边界和约束处理的参数位置
+│
+├── 08_Termination_And_Result
+│   │
+│   ├── update_best(best, population) -> Firefly
+│   │   ├── 输入：历史最好Firefly、当前Population
+│   │   └── 输出：更新后的最好Firefly
+│   │
+│   ├── check_termination(population, best, config) -> StopStatus
+│   │   ├── 输入：Population、最好Firefly、FAConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, population, stop_status) -> FAResult
+│       ├── 输入：最好Firefly、最终Population、停止状态
+│       └── 输出：FAResult
+│
+├── 09_Main_Solver
+│   │
+│   └── run(problem, config) -> FAResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：FAConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── find_brightest(population)
+│       │   ├── while not stopped
+│       │   │   ├── for each source in population
+│       │   │   │   ├── compare source with brighter fireflies
+│       │   │   │   ├── calculate_distance(source, target)
+│       │   │   │   ├── calculate_attractiveness(distance, config)
+│       │   │   │   ├── create_random_step(dimension, strength, rng)
+│       │   │   │   ├── move_toward_brighter(source, target, attractiveness, random_step)
+│       │   │   │   ├── prepare_position(position, problem)
+│       │   │   │   └── evaluate_firefly(firefly, problem)
+│       │   │   ├── move_population(population, problem, config, rng)
+│       │   │   ├── update_randomization_strength(strength, config.randomization_decay)
+│       │   │   ├── update_best(best, population)
+│       │   │   └── check_termination(population, best, config)
+│       │   └── build_result(best, population, stop_status)
+│       └── 输出
+│           └── FAResult
+│
+└── 10_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + FAConfig
+        ↓
+        initialize_population()
+        ↓
+        evaluate_population()
+        ↓
+        Population
+        ↓
+        find_brightest()
+        ↓
+        calculate_distance()
+        ↓
+        calculate_attractiveness()
+        ↓
+        move_toward_brighter()
+        ↓
+        prepare_position()
+        ↓
+        evaluate_firefly()
+        ↓
+        新Population
+        ↓ 重复搜索
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        FAResult
+```
