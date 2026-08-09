@@ -1,0 +1,274 @@
+```text
+SPEA2
+│
+├── 输入
+│   ├── Problem
+│   │   ├── problem_data：问题数据
+│   │   ├── encoding_definition：方案编码规则
+│   │   ├── objective_functions：多个目标函数
+│   │   └── constraints：业务约束
+│   └── SPEA2Config
+│       ├── population_size：种群大小
+│       ├── archive_size：外部档案容量
+│       ├── crossover_rate：交叉概率
+│       ├── mutation_rate：变异概率
+│       ├── max_generations：最大迭代次数
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── SPEA2Result
+│       ├── pareto_solutions：帕累托现实方案集
+│       ├── pareto_objectives：各方案的多个目标值
+│       ├── pareto_chromosomes：帕累托染色体集合
+│       ├── final_archive：最终外部档案
+│       ├── final_population：最终种群
+│       ├── generations：实际迭代次数
+│       └── evaluations：评价次数
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── problem_data
+│   │   ├── encoding_definition
+│   │   ├── objective_functions
+│   │   └── constraints
+│   │
+│   ├── class SPEA2Config
+│   │   ├── population_size
+│   │   ├── archive_size
+│   │   ├── crossover_rate
+│   │   ├── mutation_rate
+│   │   ├── max_generations
+│   │   └── random_seed
+│   │
+│   ├── class Individual
+│   │   ├── chromosome
+│   │   ├── decoded_solution
+│   │   ├── objective_values
+│   │   ├── constraint_violation
+│   │   ├── strength
+│   │   ├── raw_fitness
+│   │   ├── density
+│   │   └── fitness
+│   │
+│   ├── class Population
+│   │   ├── individuals
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   ├── class Archive
+│   │   ├── individuals
+│   │   └── capacity
+│   │
+│   └── class SPEA2Result
+│       ├── pareto_solutions
+│       ├── pareto_objectives
+│       ├── pareto_chromosomes
+│       ├── final_archive
+│       ├── final_population
+│       ├── generations
+│       └── evaluations
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：业务数据、编码规则、多个目标函数和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── encode_solution(solution, problem) -> Chromosome
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：染色体
+│   │
+│   ├── decode_chromosome(chromosome, problem) -> Solution
+│   │   ├── 输入：染色体、Problem
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_objectives(solution, problem) -> Vector
+│   │   ├── 输入：现实方案、Problem中的多个目标函数
+│   │   └── 输出：多个目标值组成的向量
+│   │
+│   ├── calculate_constraint_violation(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：约束违反程度
+│   │
+│   └── repair_chromosome(chromosome, problem) -> Chromosome
+│       ├── 输入：非法染色体、Problem
+│       └── 输出：修复后的染色体
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_chromosome(problem, rng) -> Chromosome
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机染色体
+│   │
+│   ├── create_individual(chromosome) -> Individual
+│   │   ├── 输入：染色体
+│   │   └── 输出：Individual对象
+│   │
+│   ├── initialize_population(problem, config) -> Population
+│   │   ├── 输入：Problem、SPEA2Config
+│   │   └── 输出：初始Population
+│   │
+│   └── initialize_archive(config) -> Archive
+│       ├── 输入：SPEA2Config中的档案容量
+│       └── 输出：空Archive
+│
+├── 04_Objective_Evaluation
+│   │
+│   ├── evaluate_individual(individual, problem) -> Individual
+│   │   ├── 输入：Individual、Problem
+│   │   └── 输出：包含现实方案、目标值和约束违反程度的Individual
+│   │
+│   └── evaluate_population(population, problem) -> Population
+│       ├── 输入：Population、Problem
+│       └── 输出：完成评价的Population
+│
+├── 05_Fitness_Assignment
+│   │
+│   ├── constraint_dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual及其约束违反程度
+│   │   └── 输出：个体A是否在约束规则下支配个体B
+│   │
+│   ├── dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual的多个目标值
+│   │   └── 输出：个体A是否支配个体B
+│   │
+│   ├── calculate_strength(individuals) -> list[Individual]
+│   │   ├── 输入：合并后的个体列表
+│   │   └── 输出：包含支配强度的个体列表
+│   │
+│   ├── calculate_raw_fitness(individuals) -> list[Individual]
+│   │   ├── 输入：包含支配强度的个体列表
+│   │   └── 输出：包含原始适应度的个体列表
+│   │
+│   ├── calculate_density(individuals) -> list[Individual]
+│   │   ├── 输入：包含多个目标值的个体列表
+│   │   └── 输出：包含密度值的个体列表
+│   │
+│   └── assign_fitness(individuals) -> list[Individual]
+│       ├── 输入：种群与档案合并后的个体列表
+│       └── 输出：完成强度、原始适应度、密度和最终适应度计算的个体列表
+│
+├── 06_Archive_Update
+│   │
+│   ├── select_nondominated(individuals) -> list[Individual]
+│   │   ├── 输入：完成适应度计算的个体列表
+│   │   └── 输出：非支配个体列表
+│   │
+│   ├── fill_archive(nondominated, remaining, archive_size) -> list[Individual]
+│   │   ├── 输入：非支配个体、其余个体、档案容量
+│   │   └── 输出：补充至指定容量的个体列表
+│   │
+│   ├── calculate_distance_matrix(individuals) -> Matrix
+│   │   ├── 输入：待截断的个体列表及其目标值
+│   │   └── 输出：个体间距离矩阵
+│   │
+│   ├── truncate_archive(individuals, archive_size) -> list[Individual]
+│   │   ├── 输入：数量超过容量的非支配个体、档案容量
+│   │   └── 输出：删除拥挤个体后的个体列表
+│   │
+│   └── update_archive(individuals, archive_size) -> Archive
+│       ├── 输入：完成适应度计算的个体列表、档案容量
+│       └── 输出：更新后的Archive
+│
+├── 07_Parent_Selection
+│   │
+│   ├── binary_tournament(archive, rng) -> Individual
+│   │   ├── 输入：Archive、随机数生成器
+│   │   └── 输出：适应度更好的父代Individual
+│   │
+│   └── select_parent_pairs(archive, pair_count, rng) -> list[ParentPair]
+│       ├── 输入：Archive、父代对数量、随机数生成器
+│       └── 输出：父代组合列表
+│
+├── 08_Genetic_Operators
+│   │
+│   ├── crossover(parent_a, parent_b, config, rng) -> tuple[Chromosome, Chromosome]
+│   │   ├── 输入：两个父代、SPEA2Config、随机数生成器
+│   │   └── 输出：两个子代染色体
+│   │
+│   ├── mutate(chromosome, mutation_rate, rng) -> Chromosome
+│   │   ├── 输入：染色体、变异概率、随机数生成器
+│   │   └── 输出：变异后的染色体
+│   │
+│   └── create_offspring(parent_pairs, problem, config, rng) -> Population
+│       ├── 输入：父代组合、Problem、SPEA2Config、随机数生成器
+│       └── 输出：完成交叉、变异和修复的新Population
+│
+├── 09_Termination_And_Result
+│   │
+│   ├── check_termination(population, config) -> StopStatus
+│   │   ├── 输入：Population、SPEA2Config
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   ├── extract_pareto_set(archive) -> list[Individual]
+│   │   ├── 输入：最终Archive
+│   │   └── 输出：最终非支配个体列表
+│   │
+│   └── build_result(pareto_set, archive, population) -> SPEA2Result
+│       ├── 输入：非支配个体、最终Archive、最终Population
+│       └── 输出：SPEA2Result
+│
+├── 10_Main_Solver
+│   │
+│   └── run(problem, config) -> SPEA2Result
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：SPEA2Config配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── initialize_archive(config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── while not stopped
+│       │   │   ├── merge population.individuals + archive.individuals
+│       │   │   ├── assign_fitness(combined_individuals)
+│       │   │   ├── update_archive(combined_individuals, config.archive_size)
+│       │   │   ├── check_termination(population, config)
+│       │   │   ├── select_parent_pairs(archive, pair_count, rng)
+│       │   │   ├── create_offspring(parent_pairs, problem, config, rng)
+│       │   │   └── evaluate_population(offspring, problem)
+│       │   ├── extract_pareto_set(archive)
+│       │   └── build_result(pareto_set, archive, population)
+│       └── 输出
+│           └── SPEA2Result
+│
+└── 11_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + SPEA2Config
+        ↓
+        initialize_population() + initialize_archive()
+        ↓
+        Population + Archive
+        ↓
+        evaluate_population()
+        ↓
+        合并种群与档案
+        ↓
+        calculate_strength()
+        ↓
+        calculate_raw_fitness()
+        ↓
+        calculate_density()
+        ↓
+        assign_fitness()
+        ↓
+        update_archive()
+        ↓
+        Archive
+        ↓
+        select_parent_pairs()
+        ↓
+        crossover() + mutate() + repair_chromosome()
+        ↓
+        新Population
+        ↓ 重复进化
+        extract_pareto_set()
+        ↓
+        build_result()
+        ↓
+        SPEA2Result
+```
