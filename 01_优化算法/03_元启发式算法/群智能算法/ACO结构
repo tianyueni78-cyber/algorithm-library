@@ -1,0 +1,263 @@
+```text
+ACO
+│
+├── 输入
+│   ├── Problem
+│   │   ├── components：可选择的节点、任务或决策
+│   │   ├── connections：允许的连接关系
+│   │   ├── heuristic_information：局部启发信息
+│   │   ├── objective_function：目标评价函数
+│   │   └── constraints：业务约束
+│   └── ACOConfig
+│       ├── ant_count：蚂蚁数量
+│       ├── pheromone_weight：信息素权重
+│       ├── heuristic_weight：启发信息权重
+│       ├── evaporation_rate：信息素蒸发率
+│       ├── deposit_strength：信息素增加强度
+│       ├── initial_pheromone：初始信息素
+│       ├── max_iterations：最大迭代次数
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── ACOResult
+│       ├── best_solution：最好现实方案
+│       ├── best_components：最好决策序列
+│       ├── best_objective：最好目标值
+│       ├── final_pheromone：最终信息素
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── components
+│   │   ├── connections
+│   │   ├── heuristic_information
+│   │   ├── objective_function
+│   │   └── constraints
+│   │
+│   ├── class ACOConfig
+│   │   ├── ant_count
+│   │   ├── pheromone_weight
+│   │   ├── heuristic_weight
+│   │   ├── evaporation_rate
+│   │   ├── deposit_strength
+│   │   ├── initial_pheromone
+│   │   ├── max_iterations
+│   │   └── random_seed
+│   │
+│   ├── class Ant
+│   │   ├── current_component
+│   │   ├── selected_components
+│   │   ├── available_components
+│   │   ├── objective_value
+│   │   └── is_feasible
+│   │
+│   ├── class AntSolution
+│   │   ├── components
+│   │   ├── decoded_solution
+│   │   ├── objective_value
+│   │   └── is_feasible
+│   │
+│   ├── class PheromoneState
+│   │   ├── pheromone_values
+│   │   └── iteration
+│   │
+│   └── class ACOResult
+│       ├── best_solution
+│       ├── best_components
+│       ├── best_objective
+│       ├── final_pheromone
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：节点或任务、连接关系、目标函数和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── create_initial_state(problem, rng) -> ConstructionState
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：方案构造的初始状态
+│   │
+│   ├── get_feasible_components(state, problem) -> list[Component]
+│   │   ├── 输入：当前构造状态、Problem
+│   │   └── 输出：下一步允许选择的决策列表
+│   │
+│   ├── apply_component(state, component, problem) -> ConstructionState
+│   │   ├── 输入：当前构造状态、选中的决策、Problem
+│   │   └── 输出：加入该决策后的新状态
+│   │
+│   ├── is_solution_complete(state, problem) -> bool
+│   │   ├── 输入：当前构造状态、Problem
+│   │   └── 输出：方案是否构造完成
+│   │
+│   ├── decode_solution(components, problem) -> Solution
+│   │   ├── 输入：决策序列、Problem
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_solution(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：目标值
+│   │
+│   └── check_feasibility(solution, problem) -> bool
+│       ├── 输入：现实方案、Problem中的约束
+│       └── 输出：方案是否可行
+│
+├── 03_Pheromone_Initialization
+│   │
+│   ├── create_pheromone_structure(problem) -> PheromoneMap
+│   │   ├── 输入：Problem中的决策和连接结构
+│   │   └── 输出：信息素存储结构
+│   │
+│   └── initialize_pheromone(problem, config) -> PheromoneState
+│       ├── 输入：Problem、ACOConfig中的初始信息素
+│       └── 输出：初始PheromoneState
+│
+├── 04_Ant_Initialization
+│   │
+│   ├── create_ant(problem, rng) -> Ant
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：处于初始构造状态的Ant
+│   │
+│   └── initialize_ants(problem, config, rng) -> list[Ant]
+│       ├── 输入：Problem、ACOConfig、随机数生成器
+│       └── 输出：蚂蚁列表
+│
+├── 05_Solution_Construction
+│   │
+│   ├── get_pheromone_value(state, component, pheromone) -> float
+│   │   ├── 输入：当前构造状态、候选决策、PheromoneState
+│   │   └── 输出：对应信息素值
+│   │
+│   ├── get_heuristic_value(state, component, problem) -> float
+│   │   ├── 输入：当前构造状态、候选决策、Problem
+│   │   └── 输出：对应启发信息值
+│   │
+│   ├── calculate_selection_probabilities(state, feasible_components, pheromone, problem, config) -> Vector
+│   │   ├── 输入：当前状态、可行决策、PheromoneState、Problem、ACOConfig
+│   │   └── 输出：每个可行决策的选择概率
+│   │
+│   ├── select_next_component(feasible_components, probabilities, rng) -> Component
+│   │   ├── 输入：可行决策、选择概率、随机数生成器
+│   │   └── 输出：选中的下一步决策
+│   │
+│   ├── construct_solution(ant, pheromone, problem, config, rng) -> AntSolution
+│   │   ├── 输入：Ant、PheromoneState、Problem、ACOConfig、随机数生成器
+│   │   └── 输出：一只蚂蚁构造的AntSolution
+│   │
+│   └── construct_all_solutions(ants, pheromone, problem, config, rng) -> list[AntSolution]
+│       ├── 输入：蚂蚁列表、PheromoneState、Problem、ACOConfig、随机数生成器
+│       └── 输出：本轮全部AntSolution
+│
+├── 06_Solution_Evaluation
+│   │
+│   ├── evaluate_ant_solution(ant_solution, problem) -> AntSolution
+│   │   ├── 输入：AntSolution、Problem
+│   │   └── 输出：包含目标值和可行性的AntSolution
+│   │
+│   ├── evaluate_all_solutions(solutions, problem) -> list[AntSolution]
+│   │   ├── 输入：本轮方案列表、Problem
+│   │   └── 输出：完成评价的方案列表
+│   │
+│   └── find_iteration_best(solutions) -> AntSolution
+│       ├── 输入：完成评价的方案列表
+│       └── 输出：本轮最好AntSolution
+│
+├── 07_Pheromone_Update
+│   │
+│   ├── evaporate_pheromone(pheromone, evaporation_rate) -> PheromoneState
+│   │   ├── 输入：当前PheromoneState、蒸发率
+│   │   └── 输出：蒸发后的PheromoneState
+│   │
+│   ├── calculate_pheromone_deposit(solution, config) -> float
+│   │   ├── 输入：已评价的AntSolution、ACOConfig
+│   │   └── 输出：该方案应增加的信息素量
+│   │
+│   ├── deposit_pheromone(pheromone, solutions, config) -> PheromoneState
+│   │   ├── 输入：蒸发后的PheromoneState、用于更新的方案、ACOConfig
+│   │   └── 输出：增加信息素后的PheromoneState
+│   │
+│   └── update_pheromone(pheromone, solutions, config) -> PheromoneState
+│       ├── 输入：当前PheromoneState、已评价方案列表、ACOConfig
+│       └── 输出：完成蒸发和增加的PheromoneState
+│
+├── 08_Termination_And_Result
+│   │
+│   ├── update_global_best(global_best, iteration_best) -> AntSolution
+│   │   ├── 输入：历史最好方案、本轮最好方案
+│   │   └── 输出：更新后的全局最好AntSolution
+│   │
+│   ├── check_termination(iteration, global_best, config) -> StopStatus
+│   │   ├── 输入：当前迭代次数、全局最好方案、ACOConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(global_best, pheromone, iteration, evaluations, stop_status) -> ACOResult
+│       ├── 输入：全局最好方案、最终信息素、迭代次数、评价次数、停止状态
+│       └── 输出：ACOResult
+│
+├── 09_Main_Solver
+│   │
+│   └── run(problem, config) -> ACOResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：ACOConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_pheromone(problem, config)
+│       │   ├── while not stopped
+│       │   │   ├── initialize_ants(problem, config, rng)
+│       │   │   ├── construct_all_solutions(ants, pheromone, problem, config, rng)
+│       │   │   ├── evaluate_all_solutions(solutions, problem)
+│       │   │   ├── find_iteration_best(solutions)
+│       │   │   ├── update_global_best(global_best, iteration_best)
+│       │   │   ├── update_pheromone(pheromone, solutions, config)
+│       │   │   └── check_termination(iteration, global_best, config)
+│       │   └── build_result(global_best, pheromone, iteration, evaluations, stop_status)
+│       └── 输出
+│           └── ACOResult
+│
+└── 10_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + ACOConfig
+        ↓
+        initialize_pheromone()
+        ↓
+        PheromoneState
+        ↓
+        initialize_ants()
+        ↓
+        get_feasible_components()
+        ↓
+        calculate_selection_probabilities()
+        ↓
+        select_next_component()
+        ↓
+        construct_all_solutions()
+        ↓
+        AntSolution列表
+        ↓
+        evaluate_all_solutions()
+        ↓
+        find_iteration_best()
+        ↓
+        update_global_best()
+        ↓
+        evaporate_pheromone()
+        ↓
+        deposit_pheromone()
+        ↓
+        新PheromoneState
+        ↓ 重复搜索
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        ACOResult
+```
