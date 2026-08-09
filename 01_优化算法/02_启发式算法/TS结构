@@ -1,0 +1,199 @@
+# TS 总体结构
+
+```text
+Tabu_Search
+│
+├── 输入
+│   ├── problem_data
+│   │   └── 任务、机器、加工时间、距离、约束等
+│   └── search_config
+│       └── 最大迭代次数、禁忌期限、停止条件、随机种子
+│
+├── 输出
+│   └── SearchResult
+│       ├── best_solution
+│       ├── best_objective
+│       ├── iterations
+│       └── history
+│
+├── 01_Problem
+│   │
+│   ├── class Problem
+│   │   ├── data
+│   │   └── constraints
+│   │
+│   └── load_problem(source) -> Problem
+│       ├── 输入：文件、数组或业务数据
+│       └── 输出：Problem
+│
+├── 02_Solution
+│   │
+│   ├── class Solution
+│   │   ├── representation
+│   │   ├── objective_value
+│   │   └── feasible
+│   │
+│   └── copy_solution(solution) -> Solution
+│       ├── 输入：Solution
+│       └── 输出：Solution副本
+│
+├── 03_Move
+│   │
+│   ├── class Move
+│   │   ├── move_type
+│   │   ├── parameters
+│   │   └── tabu_key
+│   │
+│   ├── generate_moves(solution, problem) -> list[Move]
+│   │   ├── 输入：当前Solution、Problem
+│   │   └── 输出：邻域操作列表
+│   │
+│   └── apply_move(solution, move) -> Solution
+│       ├── 输入：当前Solution、Move
+│       └── 输出：新Solution
+│
+├── 04_Initial_Solution
+│   │
+│   ├── build_random_solution(problem) -> Solution
+│   │   ├── 输入：Problem
+│   │   └── 输出：随机初始解
+│   │
+│   ├── build_greedy_solution(problem) -> Solution
+│   │   ├── 输入：Problem
+│   │   └── 输出：贪心初始解
+│   │
+│   └── build_initial_solution(problem, method) -> Solution
+│       ├── 输入：Problem、初始化方法
+│       └── 输出：初始Solution
+│
+├── 05_Evaluation
+│   │
+│   ├── evaluate(solution, problem) -> float
+│   │   ├── 输入：Solution、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── is_feasible(solution, problem) -> bool
+│   │   ├── 输入：Solution、Problem
+│   │   └── 输出：是否可行
+│   │
+│   └── repair(solution, problem) -> Solution
+│       ├── 输入：不可行Solution、Problem
+│       └── 输出：修复后的Solution
+│
+├── 06_Neighborhood
+│   │
+│   ├── swap(solution, position_a, position_b) -> Solution
+│   │   ├── 输入：Solution、两个位置
+│   │   └── 输出：交换后的Solution
+│   │
+│   ├── insert(solution, source, target) -> Solution
+│   │   ├── 输入：Solution、源位置、目标位置
+│   │   └── 输出：插入后的Solution
+│   │
+│   ├── reverse(solution, start, end) -> Solution
+│   │   ├── 输入：Solution、区间起点、区间终点
+│   │   └── 输出：反转后的Solution
+│   │
+│   └── generate_neighbors(solution, problem) -> list[(Move, Solution)]
+│       ├── 输入：当前Solution、Problem
+│       └── 输出：操作和邻居解列表
+│
+├── 07_Tabu_Memory
+│   │
+│   ├── class TabuMemory
+│   │   └── tabu_table
+│   │       ├── key：禁忌操作标识
+│   │       └── value：到期迭代次数
+│   │
+│   ├── make_tabu_key(move) -> Hashable
+│   │   ├── 输入：Move
+│   │   └── 输出：禁忌标识
+│   │
+│   ├── is_tabu(move, tabu_memory, iteration) -> bool
+│   │   ├── 输入：Move、TabuMemory、当前迭代次数
+│   │   └── 输出：是否禁忌
+│   │
+│   ├── add_tabu(move, tabu_memory, iteration, tenure) -> None
+│   │   ├── 输入：Move、TabuMemory、当前轮次、禁忌期限
+│   │   └── 输出：更新后的禁忌表
+│   │
+│   └── remove_expired_tabu(tabu_memory, iteration) -> None
+│       ├── 输入：TabuMemory、当前迭代次数
+│       └── 输出：删除过期记录后的禁忌表
+│
+├── 08_Aspiration
+│   │
+│   └── meets_aspiration(candidate, best_solution) -> bool
+│       ├── 输入：候选Solution、历史最好Solution
+│       └── 输出：是否允许打破禁忌
+│
+├── 09_Move_Selection
+│   │
+│   └── select_move(
+│           candidates,
+│           tabu_memory,
+│           best_solution,
+│           iteration
+│       ) -> (Move, Solution)
+│       ├── 输入
+│       │   ├── 候选操作和候选解
+│       │   ├── TabuMemory
+│       │   ├── 历史最好Solution
+│       │   └── 当前迭代次数
+│       └── 输出
+│           ├── 被选择的Move
+│           └── 下一轮Solution
+│
+├── 10_Stop_Condition
+│   │
+│   └── should_stop(
+│           iteration,
+│           no_improvement_count,
+│           config
+│       ) -> bool
+│       ├── 输入
+│       │   ├── 当前迭代次数
+│       │   ├── 连续未改进次数
+│       │   └── SearchConfig
+│       └── 输出：是否停止
+│
+├── 11_Search_Result
+│   │
+│   └── class SearchResult
+│       ├── best_solution
+│       ├── best_objective
+│       ├── iterations
+│       └── history
+│
+└── 12_Tabu_Search_Solver
+    │
+    ├── class TabuSearchSolver
+    │   ├── problem
+    │   ├── config
+    │   ├── current_solution
+    │   ├── best_solution
+    │   ├── tabu_memory
+    │   ├── iteration
+    │   └── history
+    │
+    └── run(problem, config) -> SearchResult
+        │
+        ├── 输入
+        │   ├── Problem
+        │   └── SearchConfig
+        │
+        ├── 调用流程
+        │   ├── build_initial_solution()
+        │   ├── evaluate()
+        │   ├── generate_neighbors()
+        │   ├── is_tabu()
+        │   ├── meets_aspiration()
+        │   ├── select_move()
+        │   ├── add_tabu()
+        │   ├── remove_expired_tabu()
+        │   ├── update_best()
+        │   └── should_stop()
+        │
+        └── 输出
+            └── SearchResult
+```
