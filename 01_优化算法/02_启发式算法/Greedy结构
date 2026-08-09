@@ -1,0 +1,171 @@
+```text
+Greedy
+│
+├── 输入
+│   ├── Problem
+│   │   ├── problem_data：问题数据
+│   │   ├── constraints：必须遵守的规则
+│   │   └── initial_state：初始状态
+│   └── GreedyConfig
+│       ├── direction：最大化或最小化
+│       ├── max_steps：最大迭代次数
+│       └── tie_breaker：评分相同时的选择规则
+│
+├── 输出
+│   └── GreedyResult
+│       ├── solution：最终方案
+│       ├── objective_value：方案评价值
+│       ├── selected_items：按顺序选择的对象
+│       ├── is_feasible：是否满足规则
+│       └── steps：实际执行步数
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── problem_data
+│   │   ├── constraints
+│   │   └── initial_state
+│   │
+│   ├── class Candidate
+│   │   ├── candidate_id
+│   │   ├── data
+│   │   └── score
+│   │
+│   ├── class Solution
+│   │   ├── selected_items
+│   │   ├── current_state
+│   │   └── objective_value
+│   │
+│   ├── class GreedyConfig
+│   │   ├── direction
+│   │   ├── max_steps
+│   │   └── tie_breaker
+│   │
+│   └── class GreedyResult
+│       ├── solution
+│       ├── objective_value
+│       ├── selected_items
+│       ├── is_feasible
+│       └── steps
+│
+├── 02_Problem_Interface
+│   │
+│   ├── load_problem(source) -> Problem
+│   │   ├── 输入：原始业务数据或数据文件
+│   │   └── 输出：Problem 问题对象
+│   │
+│   ├── create_initial_solution(problem) -> Solution
+│   │   ├── 输入：Problem 问题对象
+│   │   └── 输出：初始 Solution
+│   │
+│   └── is_complete(solution, problem) -> bool
+│       ├── 输入：当前 Solution、Problem
+│       └── 输出：当前方案是否已经完成
+│
+├── 03_Candidate_Generation
+│   │
+│   └── generate_candidates(solution, problem) -> list[Candidate]
+│       ├── 输入：当前 Solution、Problem
+│       └── 输出：当前步骤所有可选 Candidate
+│
+├── 04_Feasibility_Check
+│   │
+│   ├── is_feasible(candidate, solution, problem) -> bool
+│   │   ├── 输入：Candidate、当前 Solution、Problem
+│   │   └── 输出：加入该候选项后是否满足规则
+│   │
+│   └── filter_feasible(candidates, solution, problem) -> list[Candidate]
+│       ├── 输入：候选项列表、当前 Solution、Problem
+│       └── 输出：满足规则的 Candidate 列表
+│
+├── 05_Greedy_Selection
+│   │
+│   ├── evaluate_candidate(candidate, solution, problem) -> float
+│   │   ├── 输入：Candidate、当前 Solution、Problem
+│   │   └── 输出：候选项的贪心评分
+│   │
+│   ├── rank_candidates(candidates, direction) -> list[Candidate]
+│   │   ├── 输入：已评分候选项、最大化或最小化方向
+│   │   └── 输出：按优先级排列的候选项
+│   │
+│   └── select_best(candidates, config) -> Candidate
+│       ├── 输入：已评分候选项、GreedyConfig
+│       └── 输出：当前步骤选择的最佳 Candidate
+│
+├── 06_Solution_Update
+│   │
+│   ├── apply_candidate(solution, candidate, problem) -> Solution
+│   │   ├── 输入：当前 Solution、选中的 Candidate、Problem
+│   │   └── 输出：更新后的 Solution
+│   │
+│   └── evaluate_solution(solution, problem) -> float
+│       ├── 输入：当前 Solution、Problem
+│       └── 输出：当前方案的总体评价值
+│
+├── 07_Result_Builder
+│   │
+│   ├── validate_solution(solution, problem) -> bool
+│   │   ├── 输入：最终 Solution、Problem
+│   │   └── 输出：最终方案是否满足全部规则
+│   │
+│   └── build_result(solution, is_feasible, steps) -> GreedyResult
+│       ├── 输入：最终 Solution、可行性结果、执行步数
+│       └── 输出：GreedyResult
+│
+├── 08_Main_Solver
+│   │
+│   └── run(problem, config) -> GreedyResult
+│       ├── 输入
+│       │   ├── problem：Problem 问题对象
+│       │   └── config：GreedyConfig 配置对象
+│       ├── 调用流程
+│       │   ├── create_initial_solution(problem)
+│       │   ├── while not is_complete(solution, problem)
+│       │   │   ├── generate_candidates(solution, problem)
+│       │   │   ├── filter_feasible(candidates, solution, problem)
+│       │   │   ├── evaluate_candidate(candidate, solution, problem)
+│       │   │   ├── rank_candidates(candidates, config.direction)
+│       │   │   ├── select_best(candidates, config)
+│       │   │   └── apply_candidate(solution, candidate, problem)
+│       │   ├── evaluate_solution(solution, problem)
+│       │   ├── validate_solution(solution, problem)
+│       │   └── build_result(solution, is_feasible, steps)
+│       └── 输出
+│           └── GreedyResult
+│
+└── 09_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        load_problem()
+        ↓
+        Problem + GreedyConfig
+        ↓
+        create_initial_solution()
+        ↓
+        Solution
+        ↓
+        generate_candidates()
+        ↓
+        Candidate 列表
+        ↓
+        filter_feasible()
+        ↓
+        evaluate_candidate()
+        ↓
+        rank_candidates()
+        ↓
+        select_best()
+        ↓
+        apply_candidate()
+        ↓
+        更新后的 Solution
+        ↓ 重复选择，直到完成
+        evaluate_solution()
+        ↓
+        validate_solution()
+        ↓
+        build_result()
+        ↓
+        GreedyResult
+```
