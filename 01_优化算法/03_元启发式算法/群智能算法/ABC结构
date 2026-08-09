@@ -1,0 +1,232 @@
+```text
+ABC
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── ABCConfig
+│       ├── colony_size：蜂群大小
+│       ├── food_source_count：食物源数量
+│       ├── abandonment_limit：放弃阈值
+│       ├── max_cycles：最大循环次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── ABCResult
+│       ├── best_solution：最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_food_sources：最终食物源集合
+│       ├── cycles：实际循环次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class ABCConfig
+│   │   ├── colony_size
+│   │   ├── food_source_count
+│   │   ├── abandonment_limit
+│   │   ├── max_cycles
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class FoodSource
+│   │   ├── position
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   ├── selection_probability
+│   │   ├── trial_count
+│   │   └── is_feasible
+│   │
+│   ├── class Colony
+│   │   ├── food_sources
+│   │   ├── cycle
+│   │   └── evaluations
+│   │
+│   └── class ABCResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_food_sources
+│       ├── cycles
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Food_Source_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机参数位置
+│   │
+│   ├── create_food_source(position) -> FoodSource
+│   │   ├── 输入：参数位置
+│   │   └── 输出：FoodSource对象
+│   │
+│   └── initialize_colony(problem, config) -> Colony
+│       ├── 输入：Problem、ABCConfig
+│       └── 输出：初始Colony
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_food_source(source, problem) -> FoodSource
+│   │   ├── 输入：FoodSource、Problem
+│   │   └── 输出：包含目标值、适应度和可行性的FoodSource
+│   │
+│   ├── evaluate_colony(colony, problem) -> Colony
+│   │   ├── 输入：Colony、Problem
+│   │   └── 输出：完成评价的Colony
+│   │
+│   └── find_best(colony) -> FoodSource
+│       ├── 输入：完成评价的Colony
+│       └── 输出：当前最好FoodSource
+│
+├── 05_Neighbor_Search
+│   │
+│   ├── select_partner_index(source_index, source_count, rng) -> int
+│   │   ├── 输入：当前食物源位置、食物源数量、随机数生成器
+│   │   └── 输出：不同于当前食物源的伙伴位置
+│   │
+│   ├── create_neighbor(source, partner, rng) -> Vector
+│   │   ├── 输入：当前食物源、伙伴食物源、随机数生成器
+│   │   └── 输出：邻近参数位置
+│   │
+│   └── greedy_update(source, neighbor) -> FoodSource
+│       ├── 输入：原FoodSource、已评价的邻近FoodSource
+│       └── 输出：较好的FoodSource及更新后的trial_count
+│
+├── 06_Employed_Bee_Phase
+│   │
+│   └── employed_bee_phase(colony, problem, rng) -> Colony
+│       ├── 输入：Colony、Problem、随机数生成器
+│       └── 输出：雇佣蜂搜索后的Colony
+│
+├── 07_Onlooker_Bee_Phase
+│   │
+│   ├── calculate_selection_probabilities(colony) -> Colony
+│   │   ├── 输入：包含适应度的Colony
+│   │   └── 输出：包含选择概率的Colony
+│   │
+│   ├── select_food_source(colony, rng) -> int
+│   │   ├── 输入：包含选择概率的Colony、随机数生成器
+│   │   └── 输出：被观察蜂选中的食物源位置
+│   │
+│   └── onlooker_bee_phase(colony, problem, config, rng) -> Colony
+│       ├── 输入：Colony、Problem、ABCConfig、随机数生成器
+│       └── 输出：观察蜂搜索后的Colony
+│
+├── 08_Scout_Bee_Phase
+│   │
+│   ├── detect_abandoned_sources(colony, limit) -> list[int]
+│   │   ├── 输入：Colony、放弃阈值
+│   │   └── 输出：需要放弃的食物源位置列表
+│   │
+│   ├── replace_abandoned_source(source_index, problem, rng) -> FoodSource
+│   │   ├── 输入：待替换位置、Problem、随机数生成器
+│   │   └── 输出：重新随机生成的FoodSource
+│   │
+│   └── scout_bee_phase(colony, problem, config, rng) -> Colony
+│       ├── 输入：Colony、Problem、ABCConfig、随机数生成器
+│       └── 输出：侦察蜂替换后的Colony
+│
+├── 09_Termination_And_Result
+│   │
+│   ├── update_best(best, colony) -> FoodSource
+│   │   ├── 输入：历史最好食物源、当前Colony
+│   │   └── 输出：更新后的最好FoodSource
+│   │
+│   ├── check_termination(colony, best, config) -> StopStatus
+│   │   ├── 输入：Colony、最好食物源、ABCConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, colony, stop_status) -> ABCResult
+│       ├── 输入：最好食物源、最终Colony、停止状态
+│       └── 输出：ABCResult
+│
+├── 10_Main_Solver
+│   │
+│   └── run(problem, config) -> ABCResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：ABCConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_colony(problem, config)
+│       │   ├── evaluate_colony(colony, problem)
+│       │   ├── find_best(colony)
+│       │   ├── while not stopped
+│       │   │   ├── employed_bee_phase(colony, problem, rng)
+│       │   │   ├── calculate_selection_probabilities(colony)
+│       │   │   ├── onlooker_bee_phase(colony, problem, config, rng)
+│       │   │   ├── scout_bee_phase(colony, problem, config, rng)
+│       │   │   ├── update_best(best, colony)
+│       │   │   └── check_termination(colony, best, config)
+│       │   └── build_result(best, colony, stop_status)
+│       └── 输出
+│           └── ABCResult
+│
+└── 11_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + ABCConfig
+        ↓
+        initialize_colony()
+        ↓
+        evaluate_colony()
+        ↓
+        Colony
+        ↓
+        employed_bee_phase()
+        ↓
+        calculate_selection_probabilities()
+        ↓
+        onlooker_bee_phase()
+        ↓
+        detect_abandoned_sources()
+        ↓
+        scout_bee_phase()
+        ↓
+        更新后的Colony
+        ↓ 重复搜索
+        update_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        ABCResult
+```
