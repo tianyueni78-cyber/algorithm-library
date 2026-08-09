@@ -1,0 +1,261 @@
+```text
+NSGA-II
+│
+├── 输入
+│   ├── Problem
+│   │   ├── problem_data：问题数据
+│   │   ├── encoding_definition：方案编码规则
+│   │   ├── objective_functions：多个目标函数
+│   │   └── constraints：业务约束
+│   └── NSGA2Config
+│       ├── population_size：种群大小
+│       ├── crossover_rate：交叉概率
+│       ├── mutation_rate：变异概率
+│       ├── max_generations：最大迭代次数
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── NSGA2Result
+│       ├── pareto_solutions：帕累托现实方案集
+│       ├── pareto_objectives：各方案的多个目标值
+│       ├── pareto_chromosomes：帕累托染色体集合
+│       ├── final_population：最终种群
+│       ├── generations：实际迭代次数
+│       └── evaluations：评价次数
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── problem_data
+│   │   ├── encoding_definition
+│   │   ├── objective_functions
+│   │   └── constraints
+│   │
+│   ├── class NSGA2Config
+│   │   ├── population_size
+│   │   ├── crossover_rate
+│   │   ├── mutation_rate
+│   │   ├── max_generations
+│   │   └── random_seed
+│   │
+│   ├── class Individual
+│   │   ├── chromosome
+│   │   ├── decoded_solution
+│   │   ├── objective_values
+│   │   ├── constraint_violation
+│   │   ├── rank
+│   │   └── crowding_distance
+│   │
+│   ├── class Population
+│   │   ├── individuals
+│   │   ├── fronts
+│   │   ├── generation
+│   │   └── evaluations
+│   │
+│   └── class NSGA2Result
+│       ├── pareto_solutions
+│       ├── pareto_objectives
+│       ├── pareto_chromosomes
+│       ├── final_population
+│       ├── generations
+│       └── evaluations
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：业务数据、编码规则、多个目标函数和约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── encode_solution(solution, problem) -> Chromosome
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：染色体
+│   │
+│   ├── decode_chromosome(chromosome, problem) -> Solution
+│   │   ├── 输入：染色体、Problem
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_objectives(solution, problem) -> Vector
+│   │   ├── 输入：现实方案、Problem中的多个目标函数
+│   │   └── 输出：多个目标值组成的向量
+│   │
+│   ├── calculate_constraint_violation(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：约束违反程度
+│   │
+│   └── repair_chromosome(chromosome, problem) -> Chromosome
+│       ├── 输入：非法染色体、Problem
+│       └── 输出：修复后的染色体
+│
+├── 03_Population_Initialization
+│   │
+│   ├── create_random_chromosome(problem, rng) -> Chromosome
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机染色体
+│   │
+│   ├── create_individual(chromosome) -> Individual
+│   │   ├── 输入：染色体
+│   │   └── 输出：Individual对象
+│   │
+│   └── initialize_population(problem, config) -> Population
+│       ├── 输入：Problem、NSGA2Config
+│       └── 输出：初始Population
+│
+├── 04_Objective_Evaluation
+│   │
+│   ├── evaluate_individual(individual, problem) -> Individual
+│   │   ├── 输入：Individual、Problem
+│   │   └── 输出：包含现实方案、目标值和约束违反程度的Individual
+│   │
+│   └── evaluate_population(population, problem) -> Population
+│       ├── 输入：Population、Problem
+│       └── 输出：完成评价的Population
+│
+├── 05_Nondominated_Sorting
+│   │
+│   ├── constraint_dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual及其约束违反程度
+│   │   └── 输出：个体A是否在约束规则下支配个体B
+│   │
+│   ├── dominates(individual_a, individual_b) -> bool
+│   │   ├── 输入：两个Individual的多个目标值
+│   │   └── 输出：个体A是否支配个体B
+│   │
+│   └── fast_nondominated_sort(population) -> list[list[Individual]]
+│       ├── 输入：完成评价的Population
+│       └── 输出：按等级排列的非支配层列表
+│
+├── 06_Crowding_Distance
+│   │
+│   ├── sort_front_by_objective(front, objective_index) -> list[Individual]
+│   │   ├── 输入：一个非支配层、目标位置
+│   │   └── 输出：按指定目标排序的个体列表
+│   │
+│   ├── calculate_crowding_distance(front) -> list[Individual]
+│   │   ├── 输入：一个非支配层
+│   │   └── 输出：已设置拥挤距离的个体列表
+│   │
+│   └── assign_crowding_to_fronts(fronts) -> list[list[Individual]]
+│       ├── 输入：全部非支配层
+│       └── 输出：完成拥挤距离计算的非支配层
+│
+├── 07_Parent_Selection
+│   │
+│   ├── crowded_comparison(individual_a, individual_b) -> Individual
+│   │   ├── 输入：两个包含等级和拥挤距离的Individual
+│   │   └── 输出：等级更低或拥挤距离更大的Individual
+│   │
+│   ├── binary_tournament(population, rng) -> Individual
+│   │   ├── 输入：Population、随机数生成器
+│   │   └── 输出：选中的父代Individual
+│   │
+│   └── select_parent_pairs(population, pair_count, rng) -> list[ParentPair]
+│       ├── 输入：Population、父代对数量、随机数生成器
+│       └── 输出：父代组合列表
+│
+├── 08_Genetic_Operators
+│   │
+│   ├── crossover(parent_a, parent_b, config, rng) -> tuple[Chromosome, Chromosome]
+│   │   ├── 输入：两个父代、NSGA2Config、随机数生成器
+│   │   └── 输出：两个子代染色体
+│   │
+│   ├── mutate(chromosome, mutation_rate, rng) -> Chromosome
+│   │   ├── 输入：染色体、变异概率、随机数生成器
+│   │   └── 输出：变异后的染色体
+│   │
+│   └── create_offspring(parent_pairs, problem, config, rng) -> Population
+│       ├── 输入：父代组合、Problem、NSGA2Config、随机数生成器
+│       └── 输出：完成交叉、变异和修复的子代Population
+│
+├── 09_Environmental_Selection
+│   │
+│   ├── merge_populations(parents, offspring) -> Population
+│   │   ├── 输入：父代Population、子代Population
+│   │   └── 输出：合并Population
+│   │
+│   ├── sort_front_by_crowding(front) -> list[Individual]
+│   │   ├── 输入：一个非支配层
+│   │   └── 输出：按拥挤距离从大到小排序的个体列表
+│   │
+│   └── build_next_population(fronts, population_size) -> Population
+│       ├── 输入：已排序且已计算拥挤距离的非支配层、种群大小
+│       └── 输出：下一代Population
+│
+├── 10_Termination_And_Result
+│   │
+│   ├── check_termination(population, config) -> StopStatus
+│   │   ├── 输入：Population、NSGA2Config
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   ├── extract_pareto_front(population) -> list[Individual]
+│   │   ├── 输入：最终Population
+│   │   └── 输出：第一非支配层
+│   │
+│   └── build_result(pareto_front, population) -> NSGA2Result
+│       ├── 输入：第一非支配层、最终Population
+│       └── 输出：NSGA2Result
+│
+├── 11_Main_Solver
+│   │
+│   └── run(problem, config) -> NSGA2Result
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：NSGA2Config配置对象
+│       ├── 调用流程
+│       │   ├── initialize_population(problem, config)
+│       │   ├── evaluate_population(population, problem)
+│       │   ├── fast_nondominated_sort(population)
+│       │   ├── assign_crowding_to_fronts(fronts)
+│       │   ├── while not stopped
+│       │   │   ├── select_parent_pairs(population, pair_count, rng)
+│       │   │   ├── create_offspring(parent_pairs, problem, config, rng)
+│       │   │   ├── evaluate_population(offspring, problem)
+│       │   │   ├── merge_populations(population, offspring)
+│       │   │   ├── fast_nondominated_sort(combined_population)
+│       │   │   ├── assign_crowding_to_fronts(fronts)
+│       │   │   ├── build_next_population(fronts, config.population_size)
+│       │   │   └── check_termination(population, config)
+│       │   ├── extract_pareto_front(population)
+│       │   └── build_result(pareto_front, population)
+│       └── 输出
+│           └── NSGA2Result
+│
+└── 12_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + NSGA2Config
+        ↓
+        initialize_population()
+        ↓
+        evaluate_population()
+        ↓
+        fast_nondominated_sort()
+        ↓
+        assign_crowding_to_fronts()
+        ↓
+        select_parent_pairs()
+        ↓
+        crossover() + mutate() + repair_chromosome()
+        ↓
+        子代Population
+        ↓
+        evaluate_population()
+        ↓
+        merge_populations()
+        ↓
+        fast_nondominated_sort()
+        ↓
+        calculate_crowding_distance()
+        ↓
+        build_next_population()
+        ↓
+        新Population
+        ↓ 重复进化
+        extract_pareto_front()
+        ↓
+        build_result()
+        ↓
+        NSGA2Result
+```
