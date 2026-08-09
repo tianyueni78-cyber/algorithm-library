@@ -1,0 +1,237 @@
+```text
+GWO
+│
+├── 输入
+│   ├── Problem
+│   │   ├── objective_function：目标评价函数
+│   │   ├── lower_bounds：参数下限
+│   │   ├── upper_bounds：参数上限
+│   │   └── constraints：业务约束
+│   └── GWOConfig
+│       ├── pack_size：狼群大小
+│       ├── initial_control：初始搜索控制参数
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── GWOResult
+│       ├── best_solution：Alpha狼对应的最好参数
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_pack：最终狼群
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── objective_function
+│   │   ├── lower_bounds
+│   │   ├── upper_bounds
+│   │   └── constraints
+│   │
+│   ├── class GWOConfig
+│   │   ├── pack_size
+│   │   ├── initial_control
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Wolf
+│   │   ├── position
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class Leaders
+│   │   ├── alpha
+│   │   ├── beta
+│   │   └── delta
+│   │
+│   ├── class WolfPack
+│   │   ├── wolves
+│   │   ├── leaders
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class GWOResult
+│       ├── best_solution
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_pack
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：目标函数、参数边界和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── evaluate_solution(position, problem) -> float
+│   │   ├── 输入：候选参数位置、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(position, problem) -> bool
+│   │   ├── 输入：候选参数位置、Problem中的约束
+│   │   └── 输出：参数是否可行
+│   │
+│   └── repair_solution(position, problem) -> Vector
+│       ├── 输入：越界或违反约束的参数位置、Problem
+│       └── 输出：修复后的参数位置
+│
+├── 03_Pack_Initialization
+│   │
+│   ├── create_random_position(lower_bounds, upper_bounds, rng) -> Vector
+│   │   ├── 输入：参数上下限、随机数生成器
+│   │   └── 输出：范围内的随机参数位置
+│   │
+│   ├── create_wolf(position) -> Wolf
+│   │   ├── 输入：参数位置
+│   │   └── 输出：Wolf对象
+│   │
+│   └── initialize_pack(problem, config) -> WolfPack
+│       ├── 输入：Problem、GWOConfig
+│       └── 输出：初始WolfPack
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_wolf(wolf, problem) -> Wolf
+│   │   ├── 输入：Wolf、Problem
+│   │   └── 输出：包含目标值、适应度和可行性的Wolf
+│   │
+│   └── evaluate_pack(pack, problem) -> WolfPack
+│       ├── 输入：WolfPack、Problem
+│       └── 输出：完成评价的WolfPack
+│
+├── 05_Leader_Selection
+│   │
+│   ├── rank_wolves(pack) -> list[Wolf]
+│   │   ├── 输入：完成评价的WolfPack
+│   │   └── 输出：按适应度排序的Wolf列表
+│   │
+│   └── select_leaders(pack) -> Leaders
+│       ├── 输入：完成评价的WolfPack
+│       └── 输出：包含Alpha、Beta和Delta的Leaders
+│
+├── 06_Position_Update
+│   │
+│   ├── update_control_parameter(iteration, max_iterations, initial_control) -> float
+│   │   ├── 输入：当前迭代次数、最大迭代次数、初始控制参数
+│   │   └── 输出：当前搜索控制参数
+│   │
+│   ├── calculate_leader_position(wolf, leader, control, rng) -> Vector
+│   │   ├── 输入：当前Wolf、一个领导Wolf、控制参数、随机数生成器
+│   │   └── 输出：参考该领导者得到的候选位置
+│   │
+│   ├── combine_leader_positions(alpha_position, beta_position, delta_position) -> Vector
+│   │   ├── 输入：分别参考Alpha、Beta和Delta得到的三个候选位置
+│   │   └── 输出：合并后的新位置
+│   │
+│   ├── update_wolf_position(wolf, leaders, control, problem, rng) -> Wolf
+│   │   ├── 输入：当前Wolf、Leaders、控制参数、Problem、随机数生成器
+│   │   └── 输出：完成位置更新的Wolf
+│   │
+│   └── update_pack_positions(pack, leaders, control, problem, rng) -> WolfPack
+│       ├── 输入：WolfPack、Leaders、控制参数、Problem、随机数生成器
+│       └── 输出：完成位置更新的新WolfPack
+│
+├── 07_Boundary_And_Constraint_Handling
+│   │
+│   ├── check_bounds(position, problem) -> bool
+│   │   ├── 输入：参数位置、Problem中的参数边界
+│   │   └── 输出：参数是否位于边界内
+│   │
+│   ├── clip_to_bounds(position, problem) -> Vector
+│   │   ├── 输入：越界参数位置、Problem
+│   │   └── 输出：截断至边界内的参数位置
+│   │
+│   └── prepare_position(position, problem) -> Vector
+│       ├── 输入：更新后的参数位置、Problem
+│       └── 输出：完成边界和约束处理的参数位置
+│
+├── 08_Termination_And_Result
+│   │
+│   ├── update_global_best(best, leaders) -> Wolf
+│   │   ├── 输入：历史最好Wolf、当前Leaders
+│   │   └── 输出：更新后的最好Wolf
+│   │
+│   ├── check_termination(pack, best, config) -> StopStatus
+│   │   ├── 输入：WolfPack、最好Wolf、GWOConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(best, pack, stop_status) -> GWOResult
+│       ├── 输入：最好Wolf、最终WolfPack、停止状态
+│       └── 输出：GWOResult
+│
+├── 09_Main_Solver
+│   │
+│   └── run(problem, config) -> GWOResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：GWOConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_pack(problem, config)
+│       │   ├── evaluate_pack(pack, problem)
+│       │   ├── select_leaders(pack)
+│       │   ├── update_global_best(best, leaders)
+│       │   ├── while not stopped
+│       │   │   ├── update_control_parameter(iteration, max_iterations, initial_control)
+│       │   │   ├── for each wolf in pack
+│       │   │   │   ├── calculate_leader_position(wolf, alpha, control, rng)
+│       │   │   │   ├── calculate_leader_position(wolf, beta, control, rng)
+│       │   │   │   ├── calculate_leader_position(wolf, delta, control, rng)
+│       │   │   │   ├── combine_leader_positions(alpha_position, beta_position, delta_position)
+│       │   │   │   └── prepare_position(position, problem)
+│       │   │   ├── update_pack_positions(pack, leaders, control, problem, rng)
+│       │   │   ├── evaluate_pack(pack, problem)
+│       │   │   ├── select_leaders(pack)
+│       │   │   ├── update_global_best(best, leaders)
+│       │   │   └── check_termination(pack, best, config)
+│       │   └── build_result(best, pack, stop_status)
+│       └── 输出
+│           └── GWOResult
+│
+└── 10_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + GWOConfig
+        ↓
+        initialize_pack()
+        ↓
+        evaluate_pack()
+        ↓
+        select_leaders()
+        ↓
+        Alpha + Beta + Delta
+        ↓
+        update_control_parameter()
+        ↓
+        calculate_leader_position()
+        ↓
+        combine_leader_positions()
+        ↓
+        prepare_position()
+        ↓
+        新WolfPack
+        ↓
+        evaluate_pack()
+        ↓ 重复搜索
+        update_global_best()
+        ↓
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        GWOResult
+```
