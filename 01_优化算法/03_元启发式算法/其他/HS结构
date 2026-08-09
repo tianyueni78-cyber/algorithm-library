@@ -1,0 +1,224 @@
+```text
+HS
+│
+├── 输入
+│   ├── Problem
+│   │   ├── variable_domains：变量取值范围或候选值
+│   │   ├── objective_function：目标评价函数
+│   │   └── constraints：业务约束
+│   └── HSConfig
+│       ├── harmony_memory_size：和声记忆库大小
+│       ├── memory_consideration_rate：记忆选择概率HMCR
+│       ├── pitch_adjustment_rate：音调调整概率PAR
+│       ├── bandwidth：连续变量调整幅度
+│       ├── max_iterations：最大迭代次数
+│       ├── target_fitness：目标适应度
+│       └── random_seed：随机种子
+│
+├── 输出
+│   └── HSResult
+│       ├── best_solution：最好现实方案
+│       ├── best_harmony：最好和声向量
+│       ├── best_fitness：最好适应度
+│       ├── best_objective：最好目标值
+│       ├── final_memory：最终和声记忆库
+│       ├── iterations：实际迭代次数
+│       ├── evaluations：评价次数
+│       └── stop_reason：停止原因
+│
+├── 01_Core_Data
+│   │
+│   ├── class Problem
+│   │   ├── variable_domains
+│   │   ├── objective_function
+│   │   └── constraints
+│   │
+│   ├── class HSConfig
+│   │   ├── harmony_memory_size
+│   │   ├── memory_consideration_rate
+│   │   ├── pitch_adjustment_rate
+│   │   ├── bandwidth
+│   │   ├── max_iterations
+│   │   ├── target_fitness
+│   │   └── random_seed
+│   │
+│   ├── class Harmony
+│   │   ├── values
+│   │   ├── decoded_solution
+│   │   ├── objective_value
+│   │   ├── fitness
+│   │   └── is_feasible
+│   │
+│   ├── class HarmonyMemory
+│   │   ├── harmonies
+│   │   ├── best_harmony
+│   │   ├── worst_harmony
+│   │   ├── iteration
+│   │   └── evaluations
+│   │
+│   └── class HSResult
+│       ├── best_solution
+│       ├── best_harmony
+│       ├── best_fitness
+│       ├── best_objective
+│       ├── final_memory
+│       ├── iterations
+│       ├── evaluations
+│       └── stop_reason
+│
+├── 02_User_Problem_Interface
+│   │
+│   ├── create_problem(data) -> Problem
+│   │   ├── 输入：变量取值范围、目标函数和业务约束
+│   │   └── 输出：Problem问题对象
+│   │
+│   ├── decode_harmony(values, problem) -> Solution
+│   │   ├── 输入：和声值向量、Problem
+│   │   └── 输出：现实方案
+│   │
+│   ├── evaluate_solution(solution, problem) -> float
+│   │   ├── 输入：现实方案、Problem
+│   │   └── 输出：目标值
+│   │
+│   ├── check_feasibility(solution, problem) -> bool
+│   │   ├── 输入：现实方案、Problem中的约束
+│   │   └── 输出：方案是否可行
+│   │
+│   └── repair_harmony(values, problem) -> Vector
+│       ├── 输入：越界或违反约束的和声值、Problem
+│       └── 输出：修复后的和声值向量
+│
+├── 03_Memory_Initialization
+│   │
+│   ├── sample_random_value(domain, rng) -> Value
+│   │   ├── 输入：一个变量的取值范围、随机数生成器
+│   │   └── 输出：随机变量值
+│   │
+│   ├── create_random_harmony(problem, rng) -> Harmony
+│   │   ├── 输入：Problem、随机数生成器
+│   │   └── 输出：随机Harmony
+│   │
+│   └── initialize_memory(problem, config) -> HarmonyMemory
+│       ├── 输入：Problem、HSConfig
+│       └── 输出：初始HarmonyMemory
+│
+├── 04_Evaluation
+│   │
+│   ├── objective_to_fitness(objective_value) -> float
+│   │   ├── 输入：目标值
+│   │   └── 输出：适应度
+│   │
+│   ├── evaluate_harmony(harmony, problem) -> Harmony
+│   │   ├── 输入：Harmony、Problem
+│   │   └── 输出：包含现实方案、目标值、适应度和可行性的Harmony
+│   │
+│   ├── evaluate_memory(memory, problem) -> HarmonyMemory
+│   │   ├── 输入：HarmonyMemory、Problem
+│   │   └── 输出：完成评价的HarmonyMemory
+│   │
+│   └── rank_memory(memory) -> HarmonyMemory
+│       ├── 输入：完成评价的HarmonyMemory
+│       └── 输出：已排序并记录最好与最差方案的HarmonyMemory
+│
+├── 05_Harmony_Improvisation
+│   │
+│   ├── select_value_from_memory(memory, variable_index, rng) -> Value
+│   │   ├── 输入：HarmonyMemory、变量位置、随机数生成器
+│   │   └── 输出：从记忆库选出的变量值
+│   │
+│   ├── pitch_adjust(value, domain, bandwidth, rng) -> Value
+│   │   ├── 输入：当前变量值、取值范围、调整幅度、随机数生成器
+│   │   └── 输出：小幅调整后的变量值
+│   │
+│   ├── choose_variable_value(memory, variable_index, problem, config, rng) -> Value
+│   │   ├── 输入：HarmonyMemory、变量位置、Problem、HSConfig、随机数生成器
+│   │   └── 输出：通过记忆选择、音调调整或随机生成得到的变量值
+│   │
+│   └── improvise_harmony(memory, problem, config, rng) -> Harmony
+│       ├── 输入：HarmonyMemory、Problem、HSConfig、随机数生成器
+│       └── 输出：新Harmony
+│
+├── 06_Memory_Update
+│   │
+│   ├── compare_with_worst(new_harmony, memory) -> bool
+│   │   ├── 输入：已评价的新Harmony、当前HarmonyMemory
+│   │   └── 输出：新Harmony是否优于当前最差Harmony
+│   │
+│   ├── replace_worst(new_harmony, memory) -> HarmonyMemory
+│   │   ├── 输入：更好的新Harmony、当前HarmonyMemory
+│   │   └── 输出：替换最差方案后的HarmonyMemory
+│   │
+│   └── update_memory(new_harmony, memory) -> HarmonyMemory
+│       ├── 输入：已评价的新Harmony、当前HarmonyMemory
+│       └── 输出：完成比较、替换和排序的HarmonyMemory
+│
+├── 07_Termination_And_Result
+│   │
+│   ├── check_termination(memory, config) -> StopStatus
+│   │   ├── 输入：HarmonyMemory、HSConfig
+│   │   └── 输出：是否停止及停止原因
+│   │
+│   └── build_result(memory, stop_status) -> HSResult
+│       ├── 输入：最终HarmonyMemory、停止状态
+│       └── 输出：HSResult
+│
+├── 08_Main_Solver
+│   │
+│   └── run(problem, config) -> HSResult
+│       ├── 输入
+│       │   ├── problem：Problem问题对象
+│       │   └── config：HSConfig配置对象
+│       ├── 调用流程
+│       │   ├── initialize_memory(problem, config)
+│       │   ├── evaluate_memory(memory, problem)
+│       │   ├── rank_memory(memory)
+│       │   ├── while not stopped
+│       │   │   ├── for each variable
+│       │   │   │   ├── choose_variable_value(memory, variable_index, problem, config, rng)
+│       │   │   │   ├── select_value_from_memory() / sample_random_value()
+│       │   │   │   └── pitch_adjust()
+│       │   │   ├── improvise_harmony(memory, problem, config, rng)
+│       │   │   ├── repair_harmony(values, problem)
+│       │   │   ├── evaluate_harmony(harmony, problem)
+│       │   │   ├── update_memory(harmony, memory)
+│       │   │   └── check_termination(memory, config)
+│       │   └── build_result(memory, stop_status)
+│       └── 输出
+│           └── HSResult
+│
+└── 09_Data_Flow
+    │
+    └── 原始业务数据
+        ↓
+        create_problem()
+        ↓
+        Problem + HSConfig
+        ↓
+        initialize_memory()
+        ↓
+        evaluate_memory()
+        ↓
+        rank_memory()
+        ↓
+        HarmonyMemory
+        ↓
+        select_value_from_memory() / sample_random_value()
+        ↓
+        pitch_adjust()
+        ↓
+        improvise_harmony()
+        ↓
+        repair_harmony()
+        ↓
+        evaluate_harmony()
+        ↓
+        update_memory()
+        ↓
+        新HarmonyMemory
+        ↓ 重复搜索
+        check_termination()
+        ↓
+        build_result()
+        ↓
+        HSResult
+```
