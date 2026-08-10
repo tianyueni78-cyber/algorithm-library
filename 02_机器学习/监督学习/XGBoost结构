@@ -1,0 +1,269 @@
+```text
+XGBoost
+│
+├── 总体输入
+│   ├── features：历史样本特征表
+│   ├── targets：历史样本的类别或连续数值
+│   ├── query_features：待预测样本特征表
+│   ├── feature_names：特征名称
+│   └── config：XGBoost训练配置
+│
+├── 总体输出
+│   └── XGBoostResult
+│       ├── model：训练后的XGBoost模型
+│       ├── predictions：预测类别或数值
+│       ├── probabilities：可选的类别概率
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：类别或连续数值
+│   │   ├── feature_names：特征名称
+│   │   ├── class_names：类别名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class DatasetSplit
+│   │   ├── training：训练数据集
+│   │   ├── validation：验证数据集
+│   │   └── testing：测试数据集
+│   │
+│   ├── class XGBoostConfig
+│   │   ├── task_type：classification 或 regression
+│   │   ├── objective：训练目标类型
+│   │   ├── eval_metric：评价指标
+│   │   ├── learning_rate：每轮更新幅度
+│   │   ├── max_depth：单棵树最大深度
+│   │   ├── min_child_weight：子节点最小权重
+│   │   ├── subsample：每轮使用的样本比例
+│   │   ├── colsample_bytree：每棵树使用的特征比例
+│   │   ├── regularization_l1：L1限制强度
+│   │   ├── regularization_l2：L2限制强度
+│   │   ├── num_boost_round：最大训练轮数
+│   │   ├── early_stopping_rounds：提前停止等待轮数
+│   │   ├── classification_threshold：二分类门槛
+│   │   ├── validation_ratio：验证集比例
+│   │   ├── test_ratio：测试集比例
+│   │   └── random_state：随机种子
+│   │
+│   └── class XGBoostResult
+│       ├── model：XGBoostModel
+│       ├── predictions：预测类别或数值
+│       ├── probabilities：可选的类别概率
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 02_User_Data_Interface
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、真实答案
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── encode_features(features) -> EncodedFeatures
+│   │   ├── 输入：包含数值和类别字段的特征表
+│   │   └── 输出：数值特征表及特征转换规则
+│   │
+│   ├── encode_targets(targets, task_type) -> EncodedTargets
+│   │   ├── 输入：原始答案、任务类型
+│   │   └── 输出：处理后的答案及类别转换规则
+│   │
+│   ├── prepare_dataset(features, targets, feature_names, task_type) -> Dataset
+│   │   ├── 输入：原始特征、真实答案、特征名称、任务类型
+│   │   ├── 调用流程
+│   │   │   ├── validate_dataset()
+│   │   │   ├── encode_features()
+│   │   │   └── encode_targets()
+│   │   └── 输出：Dataset
+│   │
+│   └── split_dataset(dataset, validation_ratio, test_ratio, random_state) -> DatasetSplit
+│       ├── 输入：完整数据集、验证集比例、测试集比例、随机种子
+│       └── 输出：训练集、验证集和测试集
+│
+├── 03_XGBoost_Library
+│   │
+│   ├── class DMatrix
+│   │   ├── data：XGBoost内部特征数据
+│   │   ├── label：真实答案
+│   │   ├── feature_names：特征名称
+│   │   ├── weight：可选的样本权重
+│   │   └── missing：缺失值标记
+│   │
+│   ├── class Booster
+│   │   ├── parameters：内部训练参数
+│   │   ├── trees：训练后的树集合
+│   │   ├── best_iteration：最佳训练轮次
+│   │   ├── best_score：最佳验证成绩
+│   │   └── feature_names：特征名称
+│   │
+│   ├── create_dmatrix(dataset, missing_value) -> DMatrix
+│   │   ├── 输入：用户数据集、缺失值标记
+│   │   └── 输出：XGBoost内部数据集
+│   │
+│   ├── create_prediction_dmatrix(features, feature_names, missing_value) -> DMatrix
+│   │   ├── 输入：待预测特征表、特征名称、缺失值标记
+│   │   └── 输出：预测用DMatrix
+│   │
+│   ├── convert_config(config, class_count) -> dict
+│   │   ├── 输入：XGBoostConfig、类别数量
+│   │   └── 输出：XGBoost库可读取的参数字典
+│   │
+│   ├── train_booster(params, training_matrix, validation_matrix, rounds, callbacks) -> Booster
+│   │   ├── 输入：训练参数、训练数据、验证数据、训练轮数、回调集合
+│   │   └── 输出：训练后的Booster
+│   │
+│   ├── booster_predict(booster, prediction_matrix, iteration_range) -> Array
+│   │   ├── 输入：Booster、预测数据、使用的训练轮次范围
+│   │   └── 输出：类别概率、类别分数或预测数值
+│   │
+│   └── booster_feature_importance(booster, importance_type) -> dict
+│       ├── 输入：Booster、重要性计算方式
+│       └── 输出：各特征的重要性
+│
+├── 04_Model_Training
+│   │
+│   ├── class XGBoostModel
+│   │   ├── config：XGBoostConfig
+│   │   ├── booster：Booster
+│   │   ├── feature_names：特征名称
+│   │   ├── class_names：类别名称
+│   │   ├── feature_encoder：特征转换规则
+│   │   ├── target_encoder：类别转换规则
+│   │   ├── best_iteration：最佳训练轮次
+│   │   └── feature_importances：特征重要性
+│   │   │
+│   │   ├── fit(training_dataset, validation_dataset) -> XGBoostModel
+│   │   │   ├── 输入：训练数据集、验证数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── convert_config()
+│   │   │   │   ├── create_dmatrix()：创建训练数据
+│   │   │   │   ├── create_dmatrix()：创建验证数据
+│   │   │   │   ├── build_callbacks()
+│   │   │   │   ├── train_booster()
+│   │   │   │   └── booster_feature_importance()
+│   │   │   └── 输出：训练后的XGBoost模型
+│   │   │
+│   │   ├── predict(features) -> list[Value]
+│   │   │   ├── 输入：待预测特征表
+│   │   │   ├── 调用流程
+│   │   │   │   ├── create_prediction_dmatrix()
+│   │   │   │   ├── booster_predict()
+│   │   │   │   └── convert_raw_predictions()
+│   │   │   └── 输出：预测类别或数值
+│   │   │
+│   │   └── predict_proba(features) -> Matrix
+│   │       ├── 输入：分类任务的待预测特征表
+│   │       ├── 调用流程
+│   │       │   ├── create_prediction_dmatrix()
+│   │       │   └── booster_predict()
+│   │       └── 输出：各样本的类别概率
+│   │
+│   ├── build_callbacks(config) -> list[Callback]
+│   │   ├── 输入：XGBoost训练配置
+│   │   └── 输出：提前停止和训练日志回调
+│   │
+│   └── train_model(training_dataset, validation_dataset, config) -> XGBoostModel
+│       ├── 输入：训练数据集、验证数据集、训练配置
+│       ├── 调用流程
+│       │   ├── XGBoostModel(config)
+│       │   └── model.fit()
+│       └── 输出：XGBoostModel
+│
+├── 05_Prediction
+│   │
+│   ├── validate_prediction_features(features, feature_names) -> None
+│   │   ├── 输入：待预测特征表、训练时的特征名称
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── probabilities_to_classes(probabilities, class_names, threshold) -> list[Label]
+│   │   ├── 输入：类别概率、类别名称、二分类门槛
+│   │   └── 输出：预测类别
+│   │
+│   └── convert_raw_predictions(raw_predictions, task_type, class_names, threshold) -> PredictionOutput
+│       ├── 输入：XGBoost原始预测、任务类型、类别名称、分类门槛
+│       ├── 调用流程
+│       │   └── probabilities_to_classes()：分类任务
+│       └── 输出：预测类别、类别概率或连续数值
+│
+├── 06_Evaluation
+│   │
+│   ├── classification_metrics(targets, predictions, probabilities) -> dict
+│   │   ├── 输入：真实类别、预测类别、类别概率
+│   │   └── 输出：分类评价指标
+│   │
+│   ├── regression_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：回归评价指标
+│   │
+│   └── evaluate(targets, predictions, probabilities, task_type) -> dict
+│       ├── 输入：真实答案、预测结果、可选概率、任务类型
+│       ├── 调用流程
+│       │   ├── classification_metrics()：分类任务
+│       │   └── regression_metrics()：回归任务
+│       └── 输出：评价指标
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：XGBoostModel、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path, config) -> XGBoostModel
+│       ├── 输入：模型文件路径、XGBoost配置
+│       └── 输出：XGBoostModel
+│
+├── Main_Solver
+│   │
+│   └── class XGBoostSolver
+│       ├── config：XGBoostConfig
+│       ├── model：XGBoostModel
+│       │
+│       └── run(features, targets, query_features, feature_names) -> XGBoostResult
+│           ├── 输入
+│           │   ├── features：历史样本特征表
+│           │   ├── targets：历史样本答案
+│           │   ├── query_features：待预测样本特征表
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── split_dataset()
+│           │   ├── train_model()
+│           │   ├── model.predict()：测试数据
+│           │   ├── model.predict_proba()：分类任务测试数据
+│           │   ├── evaluate()
+│           │   ├── validate_prediction_features()
+│           │   ├── model.predict()：待预测数据
+│           │   ├── model.predict_proba()：分类任务待预测数据
+│           │   └── XGBoostResult()
+│           └── 输出
+│               └── XGBoostResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── probabilities
+│                   ├── metrics
+│                   └── feature_importances
+│
+└── 模块数据流
+    │
+    └── 原始特征与真实答案
+        └── 02_User_Data_Interface.prepare_dataset()
+            └── Dataset
+                └── 02_User_Data_Interface.split_dataset()
+                    ├── Training_Dataset
+                    │   └── 03_XGBoost_Library.create_dmatrix()
+                    │       └── Training_DMatrix
+                    ├── Validation_Dataset
+                    │   └── 03_XGBoost_Library.create_dmatrix()
+                    │       └── Validation_DMatrix
+                    └── 04_Model_Training.train_model()
+                        └── XGBoostModel
+                            ├── 05_Prediction.convert_raw_predictions()
+                            │   ├── Predictions
+                            │   └── Probabilities
+                            │       └── 06_Evaluation.evaluate()
+                            │           └── Metrics
+                            └── 07_Model_IO.save_model()
+                                └── Model_File
+                                    └── XGBoostResult
+```
