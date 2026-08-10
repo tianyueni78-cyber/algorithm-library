@@ -1,0 +1,218 @@
+DBSCAN
+│
+├── 总体输入
+│   ├── features：待聚类的数值特征表
+│   ├── feature_names：特征名称
+│   └── config：DBSCAN配置
+│
+├── 总体输出
+│   └── DBSCANResult
+│       ├── labels：每个样本的群组编号
+│       ├── cluster_count：群组数量
+│       ├── core_sample_indices：核心样本编号
+│       ├── noise_sample_indices：异常样本编号
+│       └── cluster_statistics：群组统计
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维数值特征表
+│   │   ├── feature_names：特征名称
+│   │   ├── sample_count：样本数量
+│   │   └── feature_count：特征数量
+│   │
+│   ├── class PointState
+│   │   ├── visited：是否已访问
+│   │   ├── label：当前群组编号
+│   │   ├── is_core：是否为核心点
+│   │   └── neighbor_indices：邻居编号
+│   │
+│   ├── class FeatureScaler
+│   │   ├── centers：各特征的中心值
+│   │   ├── scales：各特征的缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：原始特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   └── transform(features) -> Matrix
+│   │       ├── 输入：待转换特征表
+│   │       └── 输出：统一尺度后的特征表
+│   │
+│   ├── class DBSCANConfig
+│   │   ├── eps：邻域最大距离
+│   │   ├── min_samples：形成密集区域的最少样本数
+│   │   ├── distance_metric：距离计算方式
+│   │   ├── scale_features：是否统一特征尺度
+│   │   └── neighbor_search_method：邻居搜索方式
+│   │
+│   └── class DBSCANResult
+│       ├── model：DBSCANModel
+│       ├── labels：群组编号
+│       ├── cluster_count：群组数量
+│       ├── core_sample_indices：核心样本编号
+│       ├── noise_sample_indices：异常样本编号
+│       └── cluster_statistics：群组统计
+│
+├── 02_Data_Preparation
+│   │
+│   ├── validate_features(features) -> None
+│   │   ├── 输入：原始特征表
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── handle_missing_values(features) -> Matrix
+│   │   ├── 输入：可能包含缺失值的特征表
+│   │   └── 输出：处理缺失值后的数值特征表
+│   │
+│   └── prepare_dataset(features, feature_names) -> Dataset
+│       ├── 输入：原始特征表、特征名称
+│       ├── 调用流程
+│       │   ├── validate_features()
+│       │   └── handle_missing_values()
+│       └── 输出：Dataset
+│
+├── 03_Neighbor_Search
+│   │
+│   ├── calculate_distance(sample_a, sample_b, metric) -> float
+│   │   ├── 输入：两个样本、距离计算方式
+│   │   └── 输出：两个样本之间的距离
+│   │
+│   ├── build_neighbor_index(features, method) -> NeighborIndex
+│   │   ├── 输入：特征表、邻居搜索方式
+│   │   └── 输出：邻居查询索引
+│   │
+│   ├── region_query(sample_index, features, neighbor_index, eps, metric) -> list[int]
+│   │   ├── 输入：样本编号、特征表、邻居索引、邻域距离、距离方式
+│   │   └── 输出：邻域范围内的样本编号
+│   │
+│   └── find_all_neighbors(features, config) -> list[list[int]]
+│       ├── 输入：特征表、DBSCAN配置
+│       ├── 调用流程
+│       │   ├── build_neighbor_index()
+│       │   └── region_query()：逐个查询样本
+│       └── 输出：每个样本的邻居编号
+│
+├── 04_Clustering
+│   │
+│   ├── class DBSCANModel
+│   │   ├── config：DBSCANConfig
+│   │   ├── scaler：FeatureScaler
+│   │   ├── labels：每个样本的群组编号
+│   │   ├── point_states：每个样本的处理状态
+│   │   ├── core_sample_indices：核心样本编号
+│   │   ├── noise_sample_indices：异常样本编号
+│   │   └── cluster_count：群组数量
+│   │   │
+│   │   ├── fit(dataset) -> DBSCANModel
+│   │   │   ├── 输入：待聚类数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.fit()：启用特征缩放时
+│   │   │   │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │   │   │   ├── initialize_point_states()
+│   │   │   │   ├── find_all_neighbors()
+│   │   │   │   ├── is_core_point()
+│   │   │   │   ├── expand_cluster()
+│   │   │   │   └── collect_cluster_result()
+│   │   │   └── 输出：训练后的DBSCAN模型
+│   │   │
+│   │   └── fit_predict(dataset) -> list[int]
+│   │       ├── 输入：待聚类数据集
+│   │       ├── 调用流程
+│   │       │   └── fit()
+│   │       └── 输出：每个样本的群组编号
+│   │
+│   ├── initialize_point_states(sample_count) -> list[PointState]
+│   │   ├── 输入：样本数量
+│   │   └── 输出：全部样本的初始状态
+│   │
+│   ├── is_core_point(neighbor_indices, min_samples) -> bool
+│   │   ├── 输入：邻居编号、最少样本数
+│   │   └── 输出：是否为核心点
+│   │
+│   ├── expand_cluster(start_index, cluster_id, all_neighbors, states, config) -> None
+│   │   ├── 输入：起始样本、群组编号、全部邻居、样本状态、DBSCAN配置
+│   │   ├── 调用流程
+│   │   │   ├── assign_cluster_label()
+│   │   │   ├── is_core_point()
+│   │   │   ├── append_unvisited_neighbors()
+│   │   │   └── 重复处理直至群组无法继续扩展
+│   │   └── 输出：更新后的样本状态；无独立返回值
+│   │
+│   ├── assign_cluster_label(sample_index, cluster_id, states) -> None
+│   │   ├── 输入：样本编号、群组编号、样本状态
+│   │   └── 输出：更新后的样本群组；无独立返回值
+│   │
+│   └── collect_cluster_result(states) -> ClusterResult
+│       ├── 输入：全部样本状态
+│       └── 输出：群组编号、核心样本、异常样本和群组数量
+│
+├── 05_Result_Validation
+│   │
+│   ├── calculate_cluster_statistics(features, labels) -> dict
+│   │   ├── 输入：特征表、群组编号
+│   │   └── 输出：各群组的数量和特征统计
+│   │
+│   ├── calculate_noise_ratio(labels) -> float
+│   │   ├── 输入：群组编号
+│   │   └── 输出：异常样本比例
+│   │
+│   └── evaluate_clusters(features, labels) -> dict
+│       ├── 输入：特征表、群组编号
+│       ├── 调用流程
+│       │   ├── calculate_cluster_statistics()
+│       │   └── calculate_noise_ratio()
+│       └── 输出：群组统计和异常比例
+│
+├── 06_Model_IO
+│   │
+│   ├── save_result(result, file_path) -> None
+│   │   ├── 输入：DBSCANResult、保存路径
+│   │   └── 输出：聚类结果文件
+│   │
+│   └── load_result(file_path) -> DBSCANResult
+│       ├── 输入：聚类结果文件路径
+│       └── 输出：DBSCANResult
+│
+├── Main_Solver
+│   │
+│   └── class DBSCANSolver
+│       ├── config：DBSCANConfig
+│       ├── model：DBSCANModel
+│       │
+│       └── run(features, feature_names) -> DBSCANResult
+│           ├── 输入
+│           │   ├── features：待聚类的原始特征表
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── DBSCANModel(config)
+│           │   ├── model.fit_predict()
+│           │   ├── evaluate_clusters()
+│           │   └── DBSCANResult()
+│           └── 输出
+│               └── DBSCANResult
+│                   ├── model
+│                   ├── labels
+│                   ├── cluster_count
+│                   ├── core_sample_indices
+│                   ├── noise_sample_indices
+│                   └── cluster_statistics
+│
+└── 模块数据流
+    │
+    └── 原始数值特征
+        └── 02_Data_Preparation.prepare_dataset()
+            └── Dataset
+                └── FeatureScaler
+                    └── 03_Neighbor_Search.find_all_neighbors()
+                        └── Neighbor_Lists
+                            └── 04_Clustering
+                                ├── initialize_point_states()
+                                ├── is_core_point()
+                                ├── expand_cluster()
+                                └── collect_cluster_result()
+                                    ├── Cluster_Labels
+                                    ├── Core_Samples
+                                    └── Noise_Samples
+                                        └── 05_Result_Validation.evaluate_clusters()
+                                            └── DBSCANResult
