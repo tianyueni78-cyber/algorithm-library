@@ -1,0 +1,212 @@
+```text
+Linear_Regression
+│
+├── 总体输入
+│   ├── features：历史样本特征表
+│   ├── targets：历史样本的连续数值
+│   ├── query_features：待预测样本特征表
+│   ├── feature_names：特征名称
+│   └── config：线性回归配置
+│
+├── 总体输出
+│   └── LinearRegressionResult
+│       ├── model：训练后的线性回归模型
+│       ├── predictions：预测数值
+│       ├── coefficients：各特征系数
+│       ├── intercept：截距
+│       └── metrics：评价指标
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：连续目标值
+│   │   ├── feature_names：特征名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class DatasetSplit
+│   │   ├── training：训练数据集
+│   │   └── testing：测试数据集
+│   │
+│   ├── class FeatureScaler
+│   │   ├── centers：各特征的中心值
+│   │   ├── scales：各特征的缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：训练特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   └── transform(features) -> Matrix
+│   │       ├── 输入：待转换特征表
+│   │       └── 输出：统一尺度后的特征表
+│   │
+│   ├── class LinearRegressionConfig
+│   │   ├── fit_intercept：是否计算截距
+│   │   ├── scale_features：是否统一特征尺度
+│   │   ├── solver：数值求解方式
+│   │   ├── test_ratio：测试集比例
+│   │   └── random_state：随机种子
+│   │
+│   └── class LinearRegressionResult
+│       ├── model：LinearRegressionModel
+│       ├── predictions：预测数值
+│       ├── coefficients：各特征系数
+│       ├── intercept：截距
+│       └── metrics：评价指标
+│
+├── 02_User_Data_Interface
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、连续目标值
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── encode_categories(features) -> EncodedFeatures
+│   │   ├── 输入：包含类别字段的特征表
+│   │   └── 输出：数值特征表及类别转换规则
+│   │
+│   ├── prepare_dataset(features, targets, feature_names) -> Dataset
+│   │   ├── 输入：原始特征、连续目标值、特征名称
+│   │   ├── 调用流程
+│   │   │   ├── validate_dataset()
+│   │   │   └── encode_categories()
+│   │   └── 输出：Dataset
+│   │
+│   └── split_dataset(dataset, test_ratio, random_state) -> DatasetSplit
+│       ├── 输入：完整数据集、测试集比例、随机种子
+│       └── 输出：训练数据集和测试数据集
+│
+├── 03_Numerical_Solver
+│   │
+│   ├── build_design_matrix(features, fit_intercept) -> Matrix
+│   │   ├── 输入：训练特征表、是否包含截距
+│   │   └── 输出：求解器使用的设计矩阵
+│   │
+│   ├── solve_least_squares(matrix, targets, solver) -> Vector
+│   │   ├── 输入：设计矩阵、连续目标值、求解方式
+│   │   └── 输出：求解后的完整参数向量
+│   │
+│   └── separate_parameters(parameters, fit_intercept) -> ModelParameters
+│       ├── 输入：完整参数向量、是否包含截距
+│       └── 输出：特征系数和截距
+│
+├── 04_Model_Training
+│   │
+│   ├── class LinearRegressionModel
+│   │   ├── config：LinearRegressionConfig
+│   │   ├── coefficients：各特征系数
+│   │   ├── intercept：截距
+│   │   ├── feature_names：特征名称
+│   │   ├── scaler：FeatureScaler
+│   │   └── category_encoder：类别转换规则
+│   │   │
+│   │   ├── fit(dataset) -> LinearRegressionModel
+│   │   │   ├── 输入：训练数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.fit()：启用特征缩放时
+│   │   │   │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │   │   │   ├── build_design_matrix()
+│   │   │   │   ├── solve_least_squares()
+│   │   │   │   └── separate_parameters()
+│   │   │   └── 输出：训练后的模型
+│   │   │
+│   │   └── predict(features) -> list[float]
+│   │       ├── 输入：待预测特征表
+│   │       ├── 调用流程
+│   │       │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │       │   └── calculate_predictions()
+│   │       └── 输出：预测数值
+│   │
+│   └── train_model(training_dataset, config) -> LinearRegressionModel
+│       ├── 输入：训练数据集、线性回归配置
+│       ├── 调用流程
+│       │   ├── LinearRegressionModel(config)
+│       │   └── model.fit()
+│       └── 输出：LinearRegressionModel
+│
+├── 05_Prediction
+│   │
+│   ├── validate_prediction_features(features, feature_names) -> None
+│   │   ├── 输入：待预测特征表、训练时的特征名称
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   └── calculate_predictions(features, coefficients, intercept) -> list[float]
+│       ├── 输入：处理后的特征表、特征系数、截距
+│       └── 输出：每个样本的预测数值
+│
+├── 06_Evaluation
+│   │
+│   ├── calculate_residuals(targets, predictions) -> list[float]
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：每个样本的预测误差
+│   │
+│   ├── regression_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：平均误差及拟合指标
+│   │
+│   └── evaluate(targets, predictions) -> dict
+│       ├── 输入：真实数值、预测数值
+│       ├── 调用流程
+│       │   ├── calculate_residuals()
+│       │   └── regression_metrics()
+│       └── 输出：评价指标和误差统计
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：LinearRegressionModel、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path) -> LinearRegressionModel
+│       ├── 输入：模型文件路径
+│       └── 输出：LinearRegressionModel
+│
+├── Main_Solver
+│   │
+│   └── class LinearRegressionSolver
+│       ├── config：LinearRegressionConfig
+│       ├── model：LinearRegressionModel
+│       │
+│       └── run(features, targets, query_features, feature_names) -> LinearRegressionResult
+│           ├── 输入
+│           │   ├── features：历史样本特征表
+│           │   ├── targets：历史连续目标值
+│           │   ├── query_features：待预测样本特征表
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── split_dataset()
+│           │   ├── train_model()
+│           │   ├── model.predict()：测试数据
+│           │   ├── evaluate()
+│           │   ├── validate_prediction_features()
+│           │   ├── model.predict()：待预测数据
+│           │   └── LinearRegressionResult()
+│           └── 输出
+│               └── LinearRegressionResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── coefficients
+│                   ├── intercept
+│                   └── metrics
+│
+└── 模块数据流
+    │
+    └── 原始特征与连续目标值
+        └── 02_User_Data_Interface.prepare_dataset()
+            └── Dataset
+                └── 02_User_Data_Interface.split_dataset()
+                    ├── Training_Dataset
+                    │   └── 04_Model_Training.train_model()
+                    │       ├── FeatureScaler
+                    │       └── 03_Numerical_Solver
+                    │           ├── build_design_matrix()
+                    │           ├── solve_least_squares()
+                    │           └── separate_parameters()
+                    │               └── LinearRegressionModel
+                    └── Test_Dataset
+                        └── 04_Model_Training.LinearRegressionModel.predict()
+                            └── Predictions
+                                └── 06_Evaluation.evaluate()
+                                    └── Metrics
+                                        └── LinearRegressionResult
+```
