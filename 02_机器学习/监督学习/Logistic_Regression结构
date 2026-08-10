@@ -1,0 +1,258 @@
+```text
+Logistic_Regression
+│
+├── 总体输入
+│   ├── features：历史样本特征表
+│   ├── targets：历史样本类别
+│   ├── query_features：待预测样本特征表
+│   ├── feature_names：特征名称
+│   └── config：逻辑回归配置
+│
+├── 总体输出
+│   └── LogisticRegressionResult
+│       ├── model：训练后的逻辑回归模型
+│       ├── predictions：预测类别
+│       ├── probabilities：类别概率
+│       ├── coefficients：特征系数
+│       └── metrics：评价指标
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：类别标签
+│   │   ├── feature_names：特征名称
+│   │   ├── class_names：类别名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class DatasetSplit
+│   │   ├── training：训练数据集
+│   │   └── testing：测试数据集
+│   │
+│   ├── class FeatureScaler
+│   │   ├── centers：各特征的中心值
+│   │   ├── scales：各特征的缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：训练特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   └── transform(features) -> Matrix
+│   │       ├── 输入：待转换特征表
+│   │       └── 输出：统一尺度后的特征表
+│   │
+│   ├── class LogisticRegressionConfig
+│   │   ├── fit_intercept：是否计算截距
+│   │   ├── scale_features：是否统一特征尺度
+│   │   ├── regularization：参数限制方式
+│   │   ├── regularization_strength：限制强度
+│   │   ├── learning_rate：参数更新步长
+│   │   ├── max_iterations：最大训练轮数
+│   │   ├── tolerance：停止训练的变化阈值
+│   │   ├── classification_threshold：二分类门槛
+│   │   ├── test_ratio：测试集比例
+│   │   └── random_state：随机种子
+│   │
+│   └── class LogisticRegressionResult
+│       ├── model：LogisticRegressionModel
+│       ├── predictions：预测类别
+│       ├── probabilities：类别概率
+│       ├── coefficients：特征系数
+│       ├── intercept：截距
+│       └── metrics：评价指标
+│
+├── 02_User_Data_Interface
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、类别标签
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── encode_features(features) -> EncodedFeatures
+│   │   ├── 输入：包含数值和类别字段的特征表
+│   │   └── 输出：数值特征表及特征转换规则
+│   │
+│   ├── encode_targets(targets) -> EncodedTargets
+│   │   ├── 输入：原始类别标签
+│   │   └── 输出：数字标签、类别名称及转换规则
+│   │
+│   ├── prepare_dataset(features, targets, feature_names) -> Dataset
+│   │   ├── 输入：原始特征、类别标签、特征名称
+│   │   ├── 调用流程
+│   │   │   ├── validate_dataset()
+│   │   │   ├── encode_features()
+│   │   │   └── encode_targets()
+│   │   └── 输出：Dataset
+│   │
+│   └── split_dataset(dataset, test_ratio, random_state) -> DatasetSplit
+│       ├── 输入：完整数据集、测试集比例、随机种子
+│       └── 输出：训练数据集和测试数据集
+│
+├── 03_Numerical_Optimizer
+│   │
+│   ├── initialize_parameters(feature_count, class_count, fit_intercept) -> ModelParameters
+│   │   ├── 输入：特征数量、类别数量、是否包含截距
+│   │   └── 输出：初始特征系数和截距
+│   │
+│   ├── calculate_scores(features, parameters) -> Matrix
+│   │   ├── 输入：训练特征表、当前模型参数
+│   │   └── 输出：各样本的分类分数
+│   │
+│   ├── scores_to_probabilities(scores) -> Matrix
+│   │   ├── 输入：分类分数
+│   │   └── 输出：各类别概率
+│   │
+│   ├── calculate_loss(probabilities, targets, parameters, config) -> float
+│   │   ├── 输入：预测概率、真实类别、模型参数、训练配置
+│   │   └── 输出：当前训练损失
+│   │
+│   ├── calculate_gradient(features, targets, probabilities, parameters, config) -> Gradient
+│   │   ├── 输入：训练特征、真实类别、预测概率、模型参数、训练配置
+│   │   └── 输出：参数调整方向
+│   │
+│   ├── update_parameters(parameters, gradient, learning_rate) -> ModelParameters
+│   │   ├── 输入：当前参数、调整方向、更新步长
+│   │   └── 输出：更新后的模型参数
+│   │
+│   └── optimize_parameters(features, targets, config) -> OptimizationResult
+│       ├── 输入：训练特征、真实类别、训练配置
+│       ├── 调用流程
+│       │   ├── initialize_parameters()
+│       │   ├── calculate_scores()
+│       │   ├── scores_to_probabilities()
+│       │   ├── calculate_loss()
+│       │   ├── calculate_gradient()
+│       │   ├── update_parameters()
+│       │   └── 重复计算直至达到停止条件
+│       └── 输出：最终参数、训练轮数和损失记录
+│
+├── 04_Model_Training
+│   │
+│   ├── class LogisticRegressionModel
+│   │   ├── config：LogisticRegressionConfig
+│   │   ├── coefficients：各特征系数
+│   │   ├── intercept：截距
+│   │   ├── class_names：类别名称
+│   │   ├── feature_names：特征名称
+│   │   ├── scaler：FeatureScaler
+│   │   ├── feature_encoder：特征转换规则
+│   │   └── target_encoder：类别转换规则
+│   │   │
+│   │   ├── fit(dataset) -> LogisticRegressionModel
+│   │   │   ├── 输入：训练数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.fit()：启用特征缩放时
+│   │   │   │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │   │   │   └── optimize_parameters()
+│   │   │   └── 输出：训练后的模型
+│   │   │
+│   │   ├── predict_proba(features) -> Matrix
+│   │   │   ├── 输入：待预测特征表
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │   │   │   ├── calculate_scores()
+│   │   │   │   └── scores_to_probabilities()
+│   │   │   └── 输出：各样本的类别概率
+│   │   │
+│   │   └── predict(features) -> list[Label]
+│   │       ├── 输入：待预测特征表
+│   │       ├── 调用流程
+│   │       │   ├── predict_proba()
+│   │       │   └── probabilities_to_classes()
+│   │       └── 输出：预测类别
+│   │
+│   └── train_model(training_dataset, config) -> LogisticRegressionModel
+│       ├── 输入：训练数据集、逻辑回归配置
+│       ├── 调用流程
+│       │   ├── LogisticRegressionModel(config)
+│       │   └── model.fit()
+│       └── 输出：LogisticRegressionModel
+│
+├── 05_Prediction
+│   │
+│   ├── validate_prediction_features(features, feature_names) -> None
+│   │   ├── 输入：待预测特征表、训练时的特征名称
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   └── probabilities_to_classes(probabilities, class_names, threshold) -> list[Label]
+│       ├── 输入：类别概率、类别名称、二分类门槛
+│       └── 输出：预测类别
+│
+├── 06_Evaluation
+│   │
+│   ├── build_confusion_matrix(targets, predictions) -> Matrix
+│   │   ├── 输入：真实类别、预测类别
+│   │   └── 输出：分类结果统计矩阵
+│   │
+│   ├── classification_metrics(targets, predictions, probabilities) -> dict
+│   │   ├── 输入：真实类别、预测类别、类别概率
+│   │   └── 输出：分类评价指标
+│   │
+│   └── evaluate(targets, predictions, probabilities) -> dict
+│       ├── 输入：真实类别、预测类别、类别概率
+│       ├── 调用流程
+│       │   ├── build_confusion_matrix()
+│       │   └── classification_metrics()
+│       └── 输出：评价指标
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：LogisticRegressionModel、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path) -> LogisticRegressionModel
+│       ├── 输入：模型文件路径
+│       └── 输出：LogisticRegressionModel
+│
+├── Main_Solver
+│   │
+│   └── class LogisticRegressionSolver
+│       ├── config：LogisticRegressionConfig
+│       ├── model：LogisticRegressionModel
+│       │
+│       └── run(features, targets, query_features, feature_names) -> LogisticRegressionResult
+│           ├── 输入
+│           │   ├── features：历史样本特征表
+│           │   ├── targets：历史样本类别
+│           │   ├── query_features：待预测样本特征表
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── split_dataset()
+│           │   ├── train_model()
+│           │   ├── model.predict_proba()：测试数据
+│           │   ├── model.predict()：测试数据
+│           │   ├── evaluate()
+│           │   ├── validate_prediction_features()
+│           │   ├── model.predict_proba()：待预测数据
+│           │   ├── model.predict()：待预测数据
+│           │   └── LogisticRegressionResult()
+│           └── 输出
+│               └── LogisticRegressionResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── probabilities
+│                   ├── coefficients
+│                   ├── intercept
+│                   └── metrics
+│
+└── 模块数据流
+    │
+    └── 原始特征与类别标签
+        └── 02_User_Data_Interface.prepare_dataset()
+            └── Dataset
+                └── 02_User_Data_Interface.split_dataset()
+                    ├── Training_Dataset
+                    │   └── 04_Model_Training.train_model()
+                    │       ├── FeatureScaler
+                    │       └── 03_Numerical_Optimizer.optimize_parameters()
+                    │           └── LogisticRegressionModel
+                    └── Test_Dataset
+                        ├── LogisticRegressionModel.predict_proba()
+                        │   └── Probabilities
+                        └── LogisticRegressionModel.predict()
+                            └── Predictions
+                                └── 06_Evaluation.evaluate()
+                                    └── Metrics
+                                        └── LogisticRegressionResult
+```
