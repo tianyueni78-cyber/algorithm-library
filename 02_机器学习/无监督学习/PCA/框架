@@ -1,0 +1,226 @@
+PCA
+│
+├── 总体输入
+│   ├── features：原始数值特征表
+│   ├── feature_names：原始特征名称
+│   ├── query_features：可选的待转换特征表
+│   └── config：PCA配置
+│
+├── 总体输出
+│   └── PCAResult
+│       ├── model：训练后的PCA模型
+│       ├── transformed_features：降维后的特征表
+│       ├── components：主成分方向
+│       ├── explained_variance_ratios：各主成分的信息比例
+│       └── retained_variance_ratio：累计保留的信息比例
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维数值特征表
+│   │   ├── feature_names：原始特征名称
+│   │   ├── sample_count：样本数量
+│   │   └── feature_count：原始特征数量
+│   │
+│   ├── class FeatureScaler
+│   │   ├── means：各特征平均值
+│   │   ├── scales：各特征缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：原始特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   ├── transform(features) -> Matrix
+│   │   │   ├── 输入：待转换特征表
+│   │   │   └── 输出：中心化或标准化后的特征表
+│   │   │
+│   │   └── inverse_transform(features) -> Matrix
+│   │       ├── 输入：需要还原尺度的特征表
+│   │       └── 输出：恢复原始尺度的特征表
+│   │
+│   ├── class PCAConfig
+│   │   ├── n_components：保留的主成分数量
+│   │   ├── variance_threshold：目标累计信息比例
+│   │   ├── scale_features：是否统一特征尺度
+│   │   └── solver：主成分求解方式
+│   │
+│   └── class PCAResult
+│       ├── model：PCAModel
+│       ├── transformed_features：降维后的特征表
+│       ├── components：主成分方向
+│       ├── explained_variance_ratios：各主成分的信息比例
+│       ├── retained_variance_ratio：累计保留的信息比例
+│       └── reconstruction_error：可选的数据还原误差
+│
+├── 02_Data_Preparation
+│   │
+│   ├── validate_features(features) -> None
+│   │   ├── 输入：原始特征表
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── handle_missing_values(features) -> Matrix
+│   │   ├── 输入：可能包含缺失值的特征表
+│   │   └── 输出：处理缺失值后的数值特征表
+│   │
+│   └── prepare_dataset(features, feature_names) -> Dataset
+│       ├── 输入：原始特征表、特征名称
+│       ├── 调用流程
+│       │   ├── validate_features()
+│       │   └── handle_missing_values()
+│       └── 输出：Dataset
+│
+├── 03_Linear_Algebra_Solver
+│   │
+│   ├── decompose_features(features, solver) -> DecompositionResult
+│   │   ├── 输入：中心化后的特征表、求解方式
+│   │   └── 输出：全部候选方向及对应信息量
+│   │
+│   ├── rank_components(decomposition) -> RankedComponents
+│   │   ├── 输入：特征分解结果
+│   │   └── 输出：按信息量排序的主成分
+│   │
+│   ├── calculate_variance_ratios(component_variances) -> list[float]
+│   │   ├── 输入：各候选主成分的信息量
+│   │   └── 输出：各主成分的信息比例
+│   │
+│   └── select_components(ranked_components, variance_ratios, config) -> SelectedComponents
+│       ├── 输入：排序后的主成分、信息比例、PCA配置
+│       └── 输出：选中的主成分及累计信息比例
+│
+├── 04_PCA_Model
+│   │
+│   ├── class PCAModel
+│   │   ├── config：PCAConfig
+│   │   ├── scaler：FeatureScaler
+│   │   ├── components：选中的主成分方向
+│   │   ├── component_variances：各主成分的信息量
+│   │   ├── explained_variance_ratios：各主成分的信息比例
+│   │   ├── retained_variance_ratio：累计保留的信息比例
+│   │   └── feature_names：原始特征名称
+│   │   │
+│   │   ├── fit(dataset) -> PCAModel
+│   │   │   ├── 输入：原始数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.fit()
+│   │   │   │   ├── FeatureScaler.transform()
+│   │   │   │   ├── decompose_features()
+│   │   │   │   ├── rank_components()
+│   │   │   │   ├── calculate_variance_ratios()
+│   │   │   │   └── select_components()
+│   │   │   └── 输出：训练后的PCA模型
+│   │   │
+│   │   ├── transform(features) -> Matrix
+│   │   │   ├── 输入：原始维度的特征表
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.transform()
+│   │   │   │   └── project_features()
+│   │   │   └── 输出：降维后的特征表
+│   │   │
+│   │   ├── inverse_transform(transformed_features) -> Matrix
+│   │   │   ├── 输入：降维后的特征表
+│   │   │   ├── 调用流程
+│   │   │   │   ├── reconstruct_features()
+│   │   │   │   └── FeatureScaler.inverse_transform()
+│   │   │   └── 输出：近似还原的原始特征表
+│   │   │
+│   │   └── fit_transform(dataset) -> Matrix
+│   │       ├── 输入：原始数据集
+│   │       ├── 调用流程
+│   │       │   ├── fit()
+│   │       │   └── transform()
+│   │       └── 输出：降维后的特征表
+│   │
+│   └── train_model(dataset, config) -> PCAModel
+│       ├── 输入：原始数据集、PCA配置
+│       ├── 调用流程
+│       │   ├── PCAModel(config)
+│       │   └── model.fit()
+│       └── 输出：PCAModel
+│
+├── 05_Transformation
+│   │
+│   ├── validate_transform_features(features, feature_names) -> None
+│   │   ├── 输入：待转换特征表、训练时的特征名称
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── project_features(features, components) -> Matrix
+│   │   ├── 输入：处理后的原始特征、主成分方向
+│   │   └── 输出：降维后的特征表
+│   │
+│   └── reconstruct_features(transformed_features, components) -> Matrix
+│       ├── 输入：降维后的特征表、主成分方向
+│       └── 输出：近似还原的原始维度特征表
+│
+├── 06_Evaluation
+│   │
+│   ├── calculate_retained_variance(variance_ratios) -> float
+│   │   ├── 输入：选中主成分的信息比例
+│   │   └── 输出：累计保留的信息比例
+│   │
+│   ├── calculate_reconstruction_error(original, reconstructed) -> float
+│   │   ├── 输入：原始特征表、近似还原的特征表
+│   │   └── 输出：数据还原误差
+│   │
+│   └── evaluate(model, dataset, transformed_features) -> dict
+│       ├── 输入：PCA模型、原始数据集、降维后的特征表
+│       ├── 调用流程
+│       │   ├── model.inverse_transform()
+│       │   ├── calculate_retained_variance()
+│       │   └── calculate_reconstruction_error()
+│       └── 输出：累计信息比例和数据还原误差
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：PCAModel、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path) -> PCAModel
+│       ├── 输入：模型文件路径
+│       └── 输出：PCAModel
+│
+├── Main_Solver
+│   │
+│   └── class PCASolver
+│       ├── config：PCAConfig
+│       ├── model：PCAModel
+│       │
+│       └── run(features, feature_names, query_features) -> PCAResult
+│           ├── 输入
+│           │   ├── features：用于训练PCA的特征表
+│           │   ├── feature_names：原始特征名称
+│           │   └── query_features：可选的待转换特征表
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── train_model()
+│           │   ├── model.transform()：训练数据
+│           │   ├── evaluate()
+│           │   ├── validate_transform_features()：存在新数据时
+│           │   ├── model.transform()：存在新数据时
+│           │   └── PCAResult()
+│           └── 输出
+│               └── PCAResult
+│                   ├── model
+│                   ├── transformed_features
+│                   ├── components
+│                   ├── explained_variance_ratios
+│                   ├── retained_variance_ratio
+│                   └── reconstruction_error
+│
+└── 模块数据流
+    │
+    └── 原始数值特征
+        └── 02_Data_Preparation.prepare_dataset()
+            └── Dataset
+                └── FeatureScaler
+                    └── 中心化或标准化特征
+                        └── 03_Linear_Algebra_Solver.decompose_features()
+                            └── 候选主成分
+                                └── select_components()
+                                    └── PCAModel
+                                        ├── 05_Transformation.project_features()
+                                        │   └── Transformed_Features
+                                        ├── 05_Transformation.reconstruct_features()
+                                        │   └── Reconstructed_Features
+                                        └── 06_Evaluation.evaluate()
+                                            └── PCAResult
