@@ -1,0 +1,210 @@
+```text
+Decision_Tree
+│
+├── 总体输入
+│   ├── features：样本特征表
+│   ├── targets：样本真实类别或数值
+│   ├── task_type：classification 或 regression
+│   └── config：训练配置
+│
+├── 总体输出
+│   └── DecisionTreeResult
+│       ├── model：训练后的决策树
+│       ├── predictions：预测结果
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：真实类别或数值
+│   │   ├── feature_names：特征名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class TreeNode
+│   │   ├── feature_index：用于判断的特征编号
+│   │   ├── threshold：判断阈值
+│   │   ├── left：左子节点
+│   │   ├── right：右子节点
+│   │   ├── value：叶节点预测结果
+│   │   ├── sample_count：节点样本数
+│   │   └── is_leaf() -> bool
+│   │       ├── 输入：当前节点
+│   │       └── 输出：是否为叶节点
+│   │
+│   ├── class DecisionTreeConfig
+│   │   ├── task_type：classification 或 regression
+│   │   ├── max_depth：最大树深
+│   │   ├── min_samples_split：允许继续拆分的最少样本数
+│   │   ├── min_samples_leaf：叶节点最少样本数
+│   │   └── random_state：随机种子
+│   │
+│   └── class DecisionTreeResult
+│       ├── model：DecisionTreeModel
+│       ├── predictions：预测结果
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 02_Data_Preparation
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、真实答案
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── encode_categories(features) -> EncodedFeatures
+│   │   ├── 输入：包含类别字段的特征表
+│   │   └── 输出：转换后的数值特征及转换规则
+│   │
+│   ├── split_dataset(dataset, test_ratio, random_state) -> DatasetSplit
+│   │   ├── 输入：完整数据集、测试集比例、随机种子
+│   │   └── 输出：训练数据集和测试数据集
+│   │
+│   └── prepare_dataset(features, targets, feature_names) -> Dataset
+│       ├── 输入：原始特征、真实答案、特征名称
+│       ├── 调用流程
+│       │   ├── validate_dataset()
+│       │   └── encode_categories()
+│       └── 输出：Dataset
+│
+├── 03_Tree_Training
+│   │
+│   ├── class SplitCandidate
+│   │   ├── feature_index：候选特征编号
+│   │   ├── threshold：候选阈值
+│   │   ├── score：拆分质量
+│   │   ├── left_indices：左侧样本编号
+│   │   └── right_indices：右侧样本编号
+│   │
+│   ├── calculate_node_value(targets, task_type) -> Value
+│   │   ├── 输入：当前节点中的真实答案、任务类型
+│   │   └── 输出：多数类别或平均数值
+│   │
+│   ├── calculate_split_score(left_targets, right_targets, task_type) -> float
+│   │   ├── 输入：左右两组真实答案、任务类型
+│   │   └── 输出：候选拆分的质量分数
+│   │
+│   ├── find_best_split(features, targets, config) -> SplitCandidate
+│   │   ├── 输入：当前节点样本、真实答案、训练配置
+│   │   └── 输出：最佳特征、阈值、分数和样本分组
+│   │
+│   ├── should_stop(depth, targets, sample_count, config) -> bool
+│   │   ├── 输入：当前深度、真实答案、样本数、训练配置
+│   │   └── 输出：是否停止拆分
+│   │
+│   ├── build_tree(features, targets, depth, config) -> TreeNode
+│   │   ├── 输入：当前节点样本、真实答案、当前深度、训练配置
+│   │   ├── 调用流程
+│   │   │   ├── should_stop()
+│   │   │   ├── calculate_node_value()
+│   │   │   ├── find_best_split()
+│   │   │   ├── build_tree()：建立左子树
+│   │   │   └── build_tree()：建立右子树
+│   │   └── 输出：当前节点及其子树
+│   │
+│   └── calculate_feature_importances(root, feature_count) -> list[float]
+│       ├── 输入：根节点、特征数量
+│       └── 输出：各特征的重要性
+│
+├── 04_Model_and_Prediction
+│   │
+│   ├── class DecisionTreeModel
+│   │   ├── root：根节点
+│   │   ├── config：训练配置
+│   │   ├── feature_names：特征名称
+│   │   ├── feature_importances：特征重要性
+│   │   │
+│   │   ├── fit(dataset) -> DecisionTreeModel
+│   │   │   ├── 输入：训练数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── build_tree()
+│   │   │   │   └── calculate_feature_importances()
+│   │   │   └── 输出：训练后的模型
+│   │   │
+│   │   ├── predict(features) -> list[Value]
+│   │   │   ├── 输入：待预测特征表
+│   │   │   └── 输出：每个样本的预测类别或数值
+│   │   │
+│   │   └── predict_proba(features) -> list[list[float]]
+│   │       ├── 输入：待预测特征表
+│   │       └── 输出：分类任务中每个类别的预测比例
+│   │
+│   ├── predict_one(root, sample) -> Value
+│   │   ├── 输入：根节点、单个样本
+│   │   └── 输出：单个样本的预测结果
+│   │
+│   └── predict_batch(root, features) -> list[Value]
+│       ├── 输入：根节点、多个待预测样本
+│       ├── 调用流程
+│       │   └── predict_one()：逐个预测样本
+│       └── 输出：全部样本的预测结果
+│
+├── 05_Evaluation
+│   │
+│   ├── classification_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实类别、预测类别
+│   │   └── 输出：准确率及分类统计
+│   │
+│   ├── regression_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：平均误差及拟合指标
+│   │
+│   └── evaluate(targets, predictions, task_type) -> dict
+│       ├── 输入：真实答案、预测结果、任务类型
+│       ├── 调用流程
+│       │   ├── classification_metrics()：分类任务
+│       │   └── regression_metrics()：回归任务
+│       └── 输出：评价指标
+│
+├── 06_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：训练后的模型、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path) -> DecisionTreeModel
+│       ├── 输入：模型文件路径
+│       └── 输出：DecisionTreeModel
+│
+├── Main_Solver
+│   │
+│   └── class DecisionTreeSolver
+│       ├── config：DecisionTreeConfig
+│       ├── model：DecisionTreeModel
+│       │
+│       └── run(features, targets, feature_names) -> DecisionTreeResult
+│           ├── 输入
+│           │   ├── features：原始特征表
+│           │   ├── targets：真实类别或数值
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── split_dataset()
+│           │   ├── DecisionTreeModel(config)
+│           │   ├── model.fit(training_dataset)
+│           │   ├── model.predict(test_features)
+│           │   ├── evaluate()
+│           │   └── DecisionTreeResult()
+│           └── 输出
+│               └── DecisionTreeResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── metrics
+│                   └── feature_importances
+│
+└── 模块数据流
+    │
+    └── 原始特征与真实答案
+        └── 02_Data_Preparation.prepare_dataset()
+            └── Dataset
+                └── 02_Data_Preparation.split_dataset()
+                    ├── Training_Dataset
+                    │   └── 03_Tree_Training.build_tree()
+                    │       └── TreeNode
+                    │           └── DecisionTreeModel
+                    └── Test_Dataset
+                        └── 04_Model_and_Prediction.predict()
+                            └── Predictions
+                                └── 05_Evaluation.evaluate()
+                                    └── DecisionTreeResult
+```
