@@ -1,4 +1,5 @@
-# DFJSP
+
+```text
 Distributed_FJSP
 │
 ├── README.md
@@ -223,3 +224,4 @@ Distributed_FJSP
     │   └── 调度规则或强化学习
     └── 多工厂自主协商
         └── 多智能体、拍卖或博弈方法
+```
