@@ -1,0 +1,236 @@
+```text
+KNN
+│
+├── 总体输入
+│   ├── features：历史样本特征表
+│   ├── targets：历史样本的类别或数值
+│   ├── query_features：待预测样本特征表
+│   ├── task_type：classification 或 regression
+│   └── config：KNN配置
+│
+├── 总体输出
+│   └── KNNResult
+│       ├── predictions：预测类别或数值
+│       ├── probabilities：可选的类别概率
+│       ├── neighbors：各样本的最近邻居
+│       └── metrics：可选的评价指标
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：类别或数值
+│   │   ├── feature_names：特征名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class Neighbor
+│   │   ├── sample_index：历史样本编号
+│   │   ├── distance：与待预测样本的距离
+│   │   └── target：历史样本的类别或数值
+│   │
+│   ├── class FeatureScaler
+│   │   ├── centers：各特征的中心值
+│   │   ├── scales：各特征的缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：训练特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   └── transform(features) -> Matrix
+│   │       ├── 输入：待转换特征表
+│   │       └── 输出：统一尺度后的特征表
+│   │
+│   ├── class KNNConfig
+│   │   ├── task_type：classification 或 regression
+│   │   ├── k_neighbors：邻居数量
+│   │   ├── distance_metric：距离计算方式
+│   │   ├── weights：uniform 或 distance
+│   │   └── scale_features：是否统一特征尺度
+│   │
+│   └── class KNNResult
+│       ├── model：KNNModel
+│       ├── predictions：预测结果
+│       ├── probabilities：可选的类别概率
+│       ├── neighbors：最近邻居信息
+│       └── metrics：评价指标
+│
+├── 02_Data_Preparation
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、真实答案
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── encode_categories(features) -> EncodedFeatures
+│   │   ├── 输入：包含类别字段的特征表
+│   │   └── 输出：数值特征表及类别转换规则
+│   │
+│   ├── prepare_dataset(features, targets, feature_names) -> Dataset
+│   │   ├── 输入：原始特征、真实答案、特征名称
+│   │   ├── 调用流程
+│   │   │   ├── validate_dataset()
+│   │   │   └── encode_categories()
+│   │   └── 输出：Dataset
+│   │
+│   └── split_dataset(dataset, test_ratio, random_state) -> DatasetSplit
+│       ├── 输入：完整数据集、测试集比例、随机种子
+│       └── 输出：训练数据集和测试数据集
+│
+├── 03_Distance_and_Search
+│   │
+│   ├── calculate_distance(sample_a, sample_b, metric) -> float
+│   │   ├── 输入：两个样本、距离计算方式
+│   │   └── 输出：两个样本之间的距离
+│   │
+│   ├── calculate_all_distances(query, training_features, metric) -> list[float]
+│   │   ├── 输入：单个待预测样本、训练特征表、距离计算方式
+│   │   ├── 调用流程
+│   │   │   └── calculate_distance()：逐个比较训练样本
+│   │   └── 输出：待预测样本到全部训练样本的距离
+│   │
+│   └── find_nearest_neighbors(query, dataset, config) -> list[Neighbor]
+│       ├── 输入：单个待预测样本、训练数据集、KNN配置
+│       ├── 调用流程
+│       │   ├── calculate_all_distances()
+│       │   ├── sort_distances()
+│       │   └── select_top_k()
+│       └── 输出：距离最近的K个Neighbor
+│
+├── 04_Prediction
+│   │
+│   ├── calculate_neighbor_weights(neighbors, weights) -> list[float]
+│   │   ├── 输入：最近邻居、权重方式
+│   │   └── 输出：每个邻居的预测权重
+│   │
+│   ├── predict_class(neighbors, weights) -> Label
+│   │   ├── 输入：最近邻居、邻居权重
+│   │   └── 输出：预测类别
+│   │
+│   ├── predict_class_probability(neighbors, weights) -> dict
+│   │   ├── 输入：最近邻居、邻居权重
+│   │   └── 输出：各类别的预测比例
+│   │
+│   ├── predict_value(neighbors, weights) -> float
+│   │   ├── 输入：最近邻居、邻居权重
+│   │   └── 输出：预测数值
+│   │
+│   └── predict_one(query, dataset, config) -> PredictionRecord
+│       ├── 输入：单个待预测样本、训练数据集、KNN配置
+│       ├── 调用流程
+│       │   ├── find_nearest_neighbors()
+│       │   ├── calculate_neighbor_weights()
+│       │   ├── predict_class()：分类任务
+│       │   ├── predict_class_probability()：分类任务
+│       │   └── predict_value()：回归任务
+│       └── 输出：预测结果、概率及最近邻居
+│
+├── 05_Model
+│   │
+│   └── class KNNModel
+│       ├── config：KNNConfig
+│       ├── dataset：训练数据集
+│       ├── scaler：FeatureScaler
+│       ├── category_encoder：类别转换规则
+│       │
+│       ├── fit(dataset) -> KNNModel
+│       │   ├── 输入：训练数据集
+│       │   ├── 调用流程
+│       │   │   ├── FeatureScaler.fit()
+│       │   │   ├── FeatureScaler.transform()
+│       │   │   └── store_training_dataset()
+│       │   └── 输出：保存训练数据和转换规则的模型
+│       │
+│       ├── kneighbors(query_features) -> list[list[Neighbor]]
+│       │   ├── 输入：待查询特征表
+│       │   ├── 调用流程
+│       │   │   ├── FeatureScaler.transform()
+│       │   │   └── find_nearest_neighbors()
+│       │   └── 输出：每个样本对应的K个最近邻居
+│       │
+│       ├── predict(query_features) -> list[Value]
+│       │   ├── 输入：待预测特征表
+│       │   ├── 调用流程
+│       │   │   ├── FeatureScaler.transform()
+│       │   │   └── predict_one()：逐个预测样本
+│       │   └── 输出：预测类别或数值
+│       │
+│       └── predict_proba(query_features) -> list[dict]
+│           ├── 输入：分类任务的待预测特征表
+│           ├── 调用流程
+│           │   ├── FeatureScaler.transform()
+│           │   ├── find_nearest_neighbors()
+│           │   └── predict_class_probability()
+│           └── 输出：每个样本的类别概率
+│
+├── 06_Evaluation
+│   │
+│   ├── classification_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实类别、预测类别
+│   │   └── 输出：分类评价指标
+│   │
+│   ├── regression_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：回归评价指标
+│   │
+│   └── evaluate(targets, predictions, task_type) -> dict
+│       ├── 输入：真实答案、预测结果、任务类型
+│       ├── 调用流程
+│       │   ├── classification_metrics()：分类任务
+│       │   └── regression_metrics()：回归任务
+│       └── 输出：评价指标
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：KNN模型、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path) -> KNNModel
+│       ├── 输入：模型文件路径
+│       └── 输出：KNNModel
+│
+├── Main_Solver
+│   │
+│   └── class KNNSolver
+│       ├── config：KNNConfig
+│       ├── model：KNNModel
+│       │
+│       └── run(features, targets, query_features, feature_names) -> KNNResult
+│           ├── 输入
+│           │   ├── features：历史样本特征表
+│           │   ├── targets：历史样本答案
+│           │   ├── query_features：待预测样本
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── KNNModel(config)
+│           │   ├── model.fit()
+│           │   ├── model.kneighbors()
+│           │   ├── model.predict()
+│           │   ├── model.predict_proba()：分类任务
+│           │   └── KNNResult()
+│           └── 输出
+│               └── KNNResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── probabilities
+│                   └── neighbors
+│
+└── 模块数据流
+    │
+    └── 历史特征与真实答案
+        └── 02_Data_Preparation.prepare_dataset()
+            └── Dataset
+                └── 05_Model.KNNModel.fit()
+                    ├── FeatureScaler
+                    └── Training_Dataset
+                        └── 待预测样本
+                            └── FeatureScaler.transform()
+                                └── 03_Distance_and_Search.find_nearest_neighbors()
+                                    └── list[Neighbor]
+                                        └── 04_Prediction.predict_one()
+                                            ├── Predictions
+                                            ├── Probabilities
+                                            └── Neighbors
+                                                └── 06_Evaluation.evaluate()
+                                                    └── KNNResult
+```
