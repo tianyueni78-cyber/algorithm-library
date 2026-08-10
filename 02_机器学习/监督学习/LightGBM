@@ -1,0 +1,230 @@
+LightGBM
+│
+├── 总体输入
+│   ├── features：历史样本特征表
+│   ├── targets：历史样本的类别或数值
+│   ├── query_features：待预测样本特征表
+│   ├── feature_names：特征名称
+│   ├── categorical_features：类别特征名称
+│   └── config：LightGBM训练配置
+│
+├── 总体输出
+│   └── LightGBMResult
+│       ├── model：训练后的LightGBM模型
+│       ├── predictions：预测类别或数值
+│       ├── probabilities：可选的类别概率
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维特征表
+│   │   ├── targets：类别或数值
+│   │   ├── feature_names：特征名称
+│   │   ├── categorical_features：类别特征名称
+│   │   └── sample_count：样本数量
+│   │
+│   ├── class DatasetSplit
+│   │   ├── training：训练数据集
+│   │   ├── validation：验证数据集
+│   │   └── testing：测试数据集
+│   │
+│   ├── class LightGBMConfig
+│   │   ├── task_type：classification 或 regression
+│   │   ├── objective：训练目标类型
+│   │   ├── metric：评价指标
+│   │   ├── learning_rate：每棵树的更新幅度
+│   │   ├── num_leaves：单棵树最大叶节点数
+│   │   ├── max_depth：单棵树最大深度
+│   │   ├── min_data_in_leaf：叶节点最少样本数
+│   │   ├── feature_fraction：每轮使用的特征比例
+│   │   ├── bagging_fraction：每轮使用的样本比例
+│   │   ├── num_boost_round：最大训练轮数
+│   │   ├── early_stopping_rounds：提前停止等待轮数
+│   │   └── random_state：随机种子
+│   │
+│   └── class LightGBMResult
+│       ├── model：LightGBMModel
+│       ├── predictions：预测结果
+│       ├── probabilities：可选的类别概率
+│       ├── metrics：评价指标
+│       └── feature_importances：特征重要性
+│
+├── 02_User_Data_Interface
+│   │
+│   ├── validate_dataset(features, targets) -> None
+│   │   ├── 输入：特征表、真实答案
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── normalize_categories(features, categorical_features) -> Matrix
+│   │   ├── 输入：原始特征表、类别特征名称
+│   │   └── 输出：类别格式统一后的特征表
+│   │
+│   ├── prepare_dataset(features, targets, feature_names, categorical_features) -> Dataset
+│   │   ├── 输入：原始特征、真实答案、特征名称、类别特征名称
+│   │   ├── 调用流程
+│   │   │   ├── validate_dataset()
+│   │   │   └── normalize_categories()
+│   │   └── 输出：Dataset
+│   │
+│   └── split_dataset(dataset, validation_ratio, test_ratio, random_state) -> DatasetSplit
+│       ├── 输入：完整数据集、验证比例、测试比例、随机种子
+│       └── 输出：训练集、验证集和测试集
+│
+├── 03_LightGBM_Library
+│   │
+│   ├── class NativeDataset
+│   │   ├── data：LightGBM内部特征数据
+│   │   ├── label：真实答案
+│   │   ├── feature_name：特征名称
+│   │   ├── categorical_feature：类别特征
+│   │   └── reference：参考数据集
+│   │
+│   ├── class Booster
+│   │   ├── params：LightGBM内部训练参数
+│   │   ├── trees：训练后的树集合
+│   │   ├── best_iteration：最佳训练轮次
+│   │   └── best_score：最佳验证成绩
+│   │
+│   ├── create_native_dataset(dataset, reference) -> NativeDataset
+│   │   ├── 输入：用户数据集、可选参考数据集
+│   │   └── 输出：LightGBM内部数据集
+│   │
+│   ├── convert_config(config) -> dict
+│   │   ├── 输入：LightGBMConfig
+│   │   └── 输出：LightGBM库可读取的参数字典
+│   │
+│   ├── train_booster(params, training_set, validation_set, callbacks) -> Booster
+│   │   ├── 输入：训练参数、训练集、验证集、停止与日志回调
+│   │   └── 输出：训练后的Booster
+│   │
+│   ├── booster_predict(booster, features, iteration) -> Array
+│   │   ├── 输入：Booster、待预测特征、使用的训练轮次
+│   │   └── 输出：原始预测概率或数值
+│   │
+│   └── booster_feature_importance(booster, importance_type) -> list[float]
+│       ├── 输入：Booster、重要性计算方式
+│       └── 输出：各特征的重要性
+│
+├── 04_Model_Training
+│   │
+│   ├── class LightGBMModel
+│   │   ├── config：LightGBMConfig
+│   │   ├── booster：Booster
+│   │   ├── feature_names：特征名称
+│   │   ├── categorical_features：类别特征名称
+│   │   ├── best_iteration：最佳训练轮次
+│   │   └── feature_importances：特征重要性
+│   │
+│   ├── build_callbacks(config) -> list[Callback]
+│   │   ├── 输入：训练配置
+│   │   └── 输出：提前停止和训练日志回调
+│   │
+│   └── train_model(training_dataset, validation_dataset, config) -> LightGBMModel
+│       ├── 输入：训练数据集、验证数据集、训练配置
+│       ├── 调用流程
+│       │   ├── convert_config()
+│       │   ├── create_native_dataset()：创建训练集
+│       │   ├── create_native_dataset()：创建验证集
+│       │   ├── build_callbacks()
+│       │   ├── train_booster()
+│       │   └── booster_feature_importance()
+│       └── 输出：LightGBMModel
+│
+├── 05_Prediction
+│   │
+│   ├── predict_raw(model, features) -> Array
+│   │   ├── 输入：训练后的模型、待预测特征表
+│   │   ├── 调用流程
+│   │   │   └── booster_predict()
+│   │   └── 输出：类别概率或预测数值
+│   │
+│   ├── probabilities_to_classes(probabilities, threshold) -> list[Label]
+│   │   ├── 输入：类别概率、分类门槛
+│   │   └── 输出：预测类别
+│   │
+│   └── predict(model, features, threshold) -> PredictionOutput
+│       ├── 输入：训练后的模型、待预测特征、分类门槛
+│       ├── 调用流程
+│       │   ├── predict_raw()
+│       │   └── probabilities_to_classes()：分类任务
+│       └── 输出：预测类别、概率或数值
+│
+├── 06_Evaluation
+│   │
+│   ├── classification_metrics(targets, predictions, probabilities) -> dict
+│   │   ├── 输入：真实类别、预测类别、类别概率
+│   │   └── 输出：分类评价指标
+│   │
+│   ├── regression_metrics(targets, predictions) -> dict
+│   │   ├── 输入：真实数值、预测数值
+│   │   └── 输出：回归评价指标
+│   │
+│   └── evaluate(targets, prediction_output, task_type) -> dict
+│       ├── 输入：真实答案、预测输出、任务类型
+│       ├── 调用流程
+│       │   ├── classification_metrics()：分类任务
+│       │   └── regression_metrics()：回归任务
+│       └── 输出：评价指标
+│
+├── 07_Model_IO
+│   │
+│   ├── save_model(model, file_path) -> None
+│   │   ├── 输入：LightGBMModel、保存路径
+│   │   └── 输出：模型文件
+│   │
+│   └── load_model(file_path, config) -> LightGBMModel
+│       ├── 输入：模型文件路径、训练配置
+│       └── 输出：LightGBMModel
+│
+├── Main_Solver
+│   │
+│   └── class LightGBMSolver
+│       ├── config：LightGBMConfig
+│       ├── model：LightGBMModel
+│       │
+│       └── run(features, targets, query_features, feature_names, categorical_features) -> LightGBMResult
+│           ├── 输入
+│           │   ├── features：历史样本特征表
+│           │   ├── targets：历史样本答案
+│           │   ├── query_features：待预测样本特征表
+│           │   ├── feature_names：特征名称
+│           │   └── categorical_features：类别特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── split_dataset()
+│           │   ├── train_model()
+│           │   ├── predict()：测试数据
+│           │   ├── evaluate()
+│           │   ├── predict()：待预测数据
+│           │   └── LightGBMResult()
+│           └── 输出
+│               └── LightGBMResult
+│                   ├── model
+│                   ├── predictions
+│                   ├── probabilities
+│                   ├── metrics
+│                   └── feature_importances
+│
+└── 模块数据流
+    │
+    └── 原始特征与真实答案
+        └── 02_User_Data_Interface.prepare_dataset()
+            └── Dataset
+                └── 02_User_Data_Interface.split_dataset()
+                    ├── Training_Dataset
+                    │   └── 03_LightGBM_Library.create_native_dataset()
+                    │       └── Native_Training_Dataset
+                    ├── Validation_Dataset
+                    │   └── 03_LightGBM_Library.create_native_dataset()
+                    │       └── Native_Validation_Dataset
+                    └── 04_Model_Training.train_model()
+                        └── LightGBMModel
+                            ├── 05_Prediction.predict()
+                            │   └── PredictionOutput
+                            │       └── 06_Evaluation.evaluate()
+                            │           └── Metrics
+                            └── 07_Model_IO.save_model()
+                                └── Model_File
+                                    └── LightGBMResult
