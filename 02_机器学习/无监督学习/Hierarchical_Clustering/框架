@@ -1,0 +1,269 @@
+Hierarchical_Clustering
+│
+├── 总体输入
+│   ├── features：待聚类的数值特征表
+│   ├── feature_names：特征名称
+│   └── config：层次聚类配置
+│
+├── 总体输出
+│   └── HierarchicalClusteringResult
+│       ├── model：训练后的层次聚类模型
+│       ├── labels：每个样本的群组编号
+│       ├── linkage_matrix：群组合并记录
+│       ├── root：层级树根节点
+│       ├── cluster_count：最终群组数量
+│       └── cluster_statistics：群组统计
+│
+├── 01_Core_Data
+│   │
+│   ├── class Dataset
+│   │   ├── features：二维数值特征表
+│   │   ├── feature_names：特征名称
+│   │   ├── sample_count：样本数量
+│   │   └── feature_count：特征数量
+│   │
+│   ├── class FeatureScaler
+│   │   ├── centers：各特征的中心值
+│   │   ├── scales：各特征的缩放值
+│   │   │
+│   │   ├── fit(features) -> FeatureScaler
+│   │   │   ├── 输入：原始特征表
+│   │   │   └── 输出：完成参数计算的缩放器
+│   │   │
+│   │   └── transform(features) -> Matrix
+│   │       ├── 输入：待转换特征表
+│   │       └── 输出：统一尺度后的特征表
+│   │
+│   ├── class ClusterNode
+│   │   ├── cluster_id：节点编号
+│   │   ├── sample_indices：节点包含的样本编号
+│   │   ├── left：左子节点
+│   │   ├── right：右子节点
+│   │   ├── merge_distance：左右群组合并时的距离
+│   │   └── sample_count：节点包含的样本数量
+│   │
+│   ├── class MergeRecord
+│   │   ├── left_cluster_id：左侧群组编号
+│   │   ├── right_cluster_id：右侧群组编号
+│   │   ├── merge_distance：合并距离
+│   │   ├── merged_cluster_id：合并后的群组编号
+│   │   └── merged_sample_count：合并后的样本数量
+│   │
+│   ├── class HierarchicalClusteringConfig
+│   │   ├── n_clusters：最终群组数量
+│   │   ├── distance_threshold：可选的合并距离上限
+│   │   ├── distance_metric：样本距离计算方式
+│   │   ├── linkage_method：群组距离计算方式
+│   │   └── scale_features：是否统一特征尺度
+│   │
+│   └── class HierarchicalClusteringResult
+│       ├── model：HierarchicalClusteringModel
+│       ├── labels：群组编号
+│       ├── linkage_matrix：群组合并记录
+│       ├── root：层级树根节点
+│       ├── cluster_count：最终群组数量
+│       └── cluster_statistics：群组统计
+│
+├── 02_Data_Preparation
+│   │
+│   ├── validate_features(features) -> None
+│   │   ├── 输入：原始特征表
+│   │   └── 输出：验证成功；无返回值
+│   │
+│   ├── handle_missing_values(features) -> Matrix
+│   │   ├── 输入：可能包含缺失值的特征表
+│   │   └── 输出：处理缺失值后的数值特征表
+│   │
+│   └── prepare_dataset(features, feature_names) -> Dataset
+│       ├── 输入：原始特征表、特征名称
+│       ├── 调用流程
+│       │   ├── validate_features()
+│       │   └── handle_missing_values()
+│       └── 输出：Dataset
+│
+├── 03_Distance_Calculation
+│   │
+│   ├── calculate_sample_distance(sample_a, sample_b, metric) -> float
+│   │   ├── 输入：两个样本、距离计算方式
+│   │   └── 输出：两个样本之间的距离
+│   │
+│   ├── build_distance_matrix(features, metric) -> Matrix
+│   │   ├── 输入：特征表、距离计算方式
+│   │   ├── 调用流程
+│   │   │   └── calculate_sample_distance()：逐对计算样本
+│   │   └── 输出：样本距离矩阵
+│   │
+│   ├── calculate_single_linkage(cluster_a, cluster_b, distance_matrix) -> float
+│   │   ├── 输入：两个群组、样本距离矩阵
+│   │   └── 输出：最近成员之间的群组距离
+│   │
+│   ├── calculate_complete_linkage(cluster_a, cluster_b, distance_matrix) -> float
+│   │   ├── 输入：两个群组、样本距离矩阵
+│   │   └── 输出：最远成员之间的群组距离
+│   │
+│   ├── calculate_average_linkage(cluster_a, cluster_b, distance_matrix) -> float
+│   │   ├── 输入：两个群组、样本距离矩阵
+│   │   └── 输出：成员平均距离
+│   │
+│   ├── calculate_ward_linkage(cluster_a, cluster_b, features) -> float
+│   │   ├── 输入：两个群组、特征表
+│   │   └── 输出：Ward方式的群组合并代价
+│   │
+│   └── calculate_cluster_distance(cluster_a, cluster_b, data, linkage_method) -> float
+│       ├── 输入：两个群组、距离矩阵或特征表、群组距离方式
+│       ├── 调用流程
+│       │   ├── calculate_single_linkage()：single方式
+│       │   ├── calculate_complete_linkage()：complete方式
+│       │   ├── calculate_average_linkage()：average方式
+│       │   └── calculate_ward_linkage()：ward方式
+│       └── 输出：两个群组之间的距离
+│
+├── 04_Hierarchy_Building
+│   │
+│   ├── class HierarchicalClusteringModel
+│   │   ├── config：HierarchicalClusteringConfig
+│   │   ├── scaler：FeatureScaler
+│   │   ├── root：层级树根节点
+│   │   ├── linkage_matrix：群组合并记录
+│   │   ├── labels：最终群组编号
+│   │   ├── cluster_count：最终群组数量
+│   │   └── feature_names：特征名称
+│   │   │
+│   │   ├── fit(dataset) -> HierarchicalClusteringModel
+│   │   │   ├── 输入：待聚类数据集
+│   │   │   ├── 调用流程
+│   │   │   │   ├── FeatureScaler.fit()：启用特征缩放时
+│   │   │   │   ├── FeatureScaler.transform()：启用特征缩放时
+│   │   │   │   ├── build_distance_matrix()
+│   │   │   │   ├── initialize_clusters()
+│   │   │   │   ├── build_hierarchy()
+│   │   │   │   └── cut_hierarchy()
+│   │   │   └── 输出：训练后的层次聚类模型
+│   │   │
+│   │   └── fit_predict(dataset) -> list[int]
+│   │       ├── 输入：待聚类数据集
+│   │       ├── 调用流程
+│   │       │   └── fit()
+│   │       └── 输出：每个样本的群组编号
+│   │
+│   ├── initialize_clusters(sample_count) -> list[ClusterNode]
+│   │   ├── 输入：样本数量
+│   │   └── 输出：每个样本独立成组的初始节点
+│   │
+│   ├── find_closest_clusters(clusters, data, linkage_method) -> ClusterPair
+│   │   ├── 输入：当前群组集合、距离数据、群组距离方式
+│   │   ├── 调用流程
+│   │   │   └── calculate_cluster_distance()
+│   │   └── 输出：距离最近的两个群组及其距离
+│   │
+│   ├── merge_clusters(cluster_a, cluster_b, new_cluster_id, distance) -> ClusterNode
+│   │   ├── 输入：两个待合并群组、新群组编号、合并距离
+│   │   └── 输出：合并后的层级树节点
+│   │
+│   ├── create_merge_record(cluster_a, cluster_b, merged_cluster) -> MergeRecord
+│   │   ├── 输入：两个原群组、合并后的群组
+│   │   └── 输出：本次合并记录
+│   │
+│   ├── build_hierarchy(initial_clusters, data, config) -> HierarchyResult
+│   │   ├── 输入：初始群组、距离数据、层次聚类配置
+│   │   ├── 调用流程
+│   │   │   ├── find_closest_clusters()
+│   │   │   ├── merge_clusters()
+│   │   │   ├── create_merge_record()
+│   │   │   ├── update_active_clusters()
+│   │   │   └── 重复合并直至形成根节点
+│   │   └── 输出：层级树根节点和完整合并记录
+│   │
+│   ├── cut_by_cluster_count(root, n_clusters) -> list[ClusterNode]
+│   │   ├── 输入：层级树根节点、目标群组数量
+│   │   └── 输出：切分后的群组节点
+│   │
+│   ├── cut_by_distance(root, distance_threshold) -> list[ClusterNode]
+│   │   ├── 输入：层级树根节点、合并距离上限
+│   │   └── 输出：切分后的群组节点
+│   │
+│   ├── assign_cluster_labels(clusters, sample_count) -> list[int]
+│   │   ├── 输入：切分后的群组节点、样本数量
+│   │   └── 输出：每个样本的群组编号
+│   │
+│   └── cut_hierarchy(root, config, sample_count) -> ClusterCutResult
+│       ├── 输入：层级树根节点、层次聚类配置、样本数量
+│       ├── 调用流程
+│       │   ├── cut_by_cluster_count()：按群组数量切分
+│       │   ├── cut_by_distance()：按距离上限切分
+│       │   └── assign_cluster_labels()
+│       └── 输出：最终群组节点、群组编号和群组数量
+│
+├── 05_Result_Validation
+│   │
+│   ├── calculate_cluster_statistics(features, labels) -> dict
+│   │   ├── 输入：原始特征表、群组编号
+│   │   └── 输出：各群组的数量和特征统计
+│   │
+│   ├── calculate_silhouette_score(features, labels) -> float
+│   │   ├── 输入：处理后的特征表、群组编号
+│   │   └── 输出：群组分离程度评分
+│   │
+│   └── evaluate_clusters(features, labels) -> dict
+│       ├── 输入：特征表、群组编号
+│       ├── 调用流程
+│       │   ├── calculate_cluster_statistics()
+│       │   └── calculate_silhouette_score()
+│       └── 输出：群组统计和分离程度评分
+│
+├── 06_Model_IO
+│   │
+│   ├── save_result(result, file_path) -> None
+│   │   ├── 输入：HierarchicalClusteringResult、保存路径
+│   │   └── 输出：聚类结果文件
+│   │
+│   └── load_result(file_path) -> HierarchicalClusteringResult
+│       ├── 输入：聚类结果文件路径
+│       └── 输出：HierarchicalClusteringResult
+│
+├── Main_Solver
+│   │
+│   └── class HierarchicalClusteringSolver
+│       ├── config：HierarchicalClusteringConfig
+│       ├── model：HierarchicalClusteringModel
+│       │
+│       └── run(features, feature_names) -> HierarchicalClusteringResult
+│           ├── 输入
+│           │   ├── features：待聚类的原始特征表
+│           │   └── feature_names：特征名称
+│           ├── 调用流程
+│           │   ├── prepare_dataset()
+│           │   ├── HierarchicalClusteringModel(config)
+│           │   ├── model.fit_predict()
+│           │   ├── evaluate_clusters()
+│           │   └── HierarchicalClusteringResult()
+│           └── 输出
+│               └── HierarchicalClusteringResult
+│                   ├── model
+│                   ├── labels
+│                   ├── linkage_matrix
+│                   ├── root
+│                   ├── cluster_count
+│                   └── cluster_statistics
+│
+└── 模块数据流
+    │
+    └── 原始数值特征
+        └── 02_Data_Preparation.prepare_dataset()
+            └── Dataset
+                └── FeatureScaler
+                    └── 03_Distance_Calculation.build_distance_matrix()
+                        └── Distance_Matrix
+                            └── 04_Hierarchy_Building.initialize_clusters()
+                                └── Initial_Clusters
+                                    └── build_hierarchy()
+                                        ├── find_closest_clusters()
+                                        ├── merge_clusters()
+                                        └── create_merge_record()
+                                            ├── Hierarchy_Root
+                                            └── Linkage_Matrix
+                                                └── cut_hierarchy()
+                                                    ├── Cluster_Labels
+                                                    └── Cluster_Count
+                                                        └── 05_Result_Validation.evaluate_clusters()
+                                                            └── HierarchicalClusteringResult
